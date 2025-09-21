@@ -1,12 +1,5 @@
-/*
- * ii's Stupid Menu  Menu/Main.cs
- * Copyright (C) 2025  Goldentrophy Software
- * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
- */
-
+// don't worry, your "Goldentrophy Software" isn't actual company
+// yes its on GPL-3 but its free license so not surprised
 using BepInEx;
 using ExitGames.Client.Photon;
 using GorillaExtensions;
@@ -370,7 +363,7 @@ namespace iiMenu.Menu
 
                     motdTC.richText = true;
                     motdTC.fontSize = 70;
-                    motdTC.text = "Thanks for using ii's Stupid Menu!";
+                    motdTC.text = "Thanks for using Prism!";
 
                     if (doCustomName)
                         motdTC.text = "Thanks for using " + NoRichtextTags(customMenuName) + "!";
@@ -610,7 +603,7 @@ namespace iiMenu.Menu
 
                 if (animatedTitle && title != null)
                 {
-                    string targetString = doCustomName ? NoRichtextTags(customMenuName) : "ii's Stupid Menu";
+                    string targetString = doCustomName ? NoRichtextTags(customMenuName) : "Prism";
                     int length = (int)Mathf.PingPong(Time.time / 0.25f, targetString.Length);
                     if (length > 0)
                         title.text = targetString[..length];
@@ -2148,7 +2141,7 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<Text>();
             title.font = activeFont;
-            title.text = translate ? "ii's Stupid Menu" : "ii's <b>Stupid</b> Menu";
+            title.text = translate ? "Prism" : "Prism";
 
             if (doCustomName)
                 title.text = customMenuName;
@@ -2200,7 +2193,7 @@ namespace iiMenu.Menu
 
             if (animatedTitle)
             {
-                string targetString = doCustomName ? NoRichtextTags(customMenuName) : "ii's Stupid Menu";
+                string targetString = doCustomName ? NoRichtextTags(customMenuName) : "Prism";
                 int length = (int)Mathf.PingPong(Time.time / 0.25f, targetString.Length);
                 if (length > 0)
                     title.text = targetString[..length];

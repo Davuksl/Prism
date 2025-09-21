@@ -1,12 +1,5 @@
-/*
- * ii's Stupid Menu  Classes/Menu/ServerData.cs
- * Copyright (C) 2025  Goldentrophy Software
- * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
- */
-
+// don't worry, your "Goldentrophy Software" isn't actual company
+// yes its on GPL-3 but its free license so not surprised
 using GorillaNetworking;
 using iiMenu.Managers;
 using Photon.Pun;

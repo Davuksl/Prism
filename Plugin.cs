@@ -1,12 +1,5 @@
-/*
- * ii's Stupid Menu  Plugin.cs
- * Copyright (C) 2025  Goldentrophy Software
- * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
- */
-
+// don't worry, your "Goldentrophy Software" isn't actual company
+// yes its on GPL-3 but its free license so not surprised
 using BepInEx;
 using BepInEx.Logging;
 using iiMenu.Classes.Menu;
@@ -32,16 +25,11 @@ namespace iiMenu
         private void Awake()
         {
             // Set console title
-            Console.Title = $"ii's Stupid Menu // Build {PluginInfo.Version}";
+            Console.Title = $"Prism // Build {PluginInfo.Version}";
             instance = this;
 
             LogManager.Log($@"
-
-     ••╹   ┏┓     • ┓  ┳┳┓      
-     ┓┓ ┏  ┗┓╋┓┏┏┓┓┏┫  ┃┃┃┏┓┏┓┓┏
-     ┗┗ ┛  ┗┛┗┗┻┣┛┗┗┻  ┛ ┗┗ ┛┗┗┻
-                ┛               
-    ii's Stupid Menu  {(PluginInfo.BetaBuild ? "Beta " : "Build")} {PluginInfo.Version}
+    Prism  {(PluginInfo.BetaBuild ? "Beta " : "Build")} {PluginInfo.Version}
     Compiled {PluginInfo.BuildTimestamp}
 ");
 
@@ -68,13 +56,13 @@ namespace iiMenu
             }
 
             // Ugily hard-coded but works so well
-            if (File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_Preferences.txt"))
+            if (File.Exists($"{PluginInfo.BaseDirectory}/DMenu_Preferences.txt"))
             {
-                if (File.ReadAllLines($"{PluginInfo.BaseDirectory}/iiMenu_Preferences.txt")[0].Split(";;").Contains("Accept TOS"))
+                if (File.ReadAllLines($"{PluginInfo.BaseDirectory}/DMenu_Preferences.txt")[0].Split(";;").Contains("Accept TOS"))
                     TOSPatch.enabled = true;
             }
 
-            if (File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_DisableTelemetry.txt"))
+            if (File.Exists($"{PluginInfo.BaseDirectory}/DMenu_DisableTelemetry.txt"))
                 ServerData.DisableTelemetry = true;
             
             GorillaTagger.OnPlayerSpawned(LoadMenu);
@@ -84,7 +72,7 @@ namespace iiMenu
         {
             PatchHandler.PatchAll();
 
-            GameObject Loader = new GameObject("iiMenu_Loader");
+            GameObject Loader = new GameObject("DMenu_Loader");
             Loader.AddComponent<UI>();
             Loader.AddComponent<Notifications.NotifiLib>();
             Loader.AddComponent<CoroutineManager>();
@@ -96,13 +84,13 @@ namespace iiMenu
         // Don't merge these methods, it just doesn't work
         public static void Inject()
         {
-            GameObject iiMenu = new GameObject("iiMenu");
+            GameObject iiMenu = new GameObject("DMenu");
             iiMenu.AddComponent<Plugin>();
         }
 
         public static void InjectDontDestroy()
         {
-            GameObject iiMenu = new GameObject("iiMenu");
+            GameObject iiMenu = new GameObject("DMenu");
             iiMenu.AddComponent<Plugin>();
             DontDestroyOnLoad(iiMenu);
         }

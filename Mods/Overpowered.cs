@@ -1,17 +1,11 @@
-/*
- * ii's Stupid Menu  Mods/Overpowered.cs
- * Copyright (C) 2025  Goldentrophy Software
- * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
- */
-
+// don't worry, your "Goldentrophy Software" isn't actual company
+// yes its on GPL-3 but its free license so not surprised
 using ExitGames.Client.Photon;
 using GorillaExtensions;
 using GorillaGameModes;
 using GorillaLocomotion;
 using GorillaLocomotion.Gameplay;
+using GorillaNetworking;
 using GorillaTagScripts;
 using iiMenu.Managers;
 using iiMenu.Notifications;
@@ -114,6 +108,11 @@ namespace iiMenu.Mods
                 }
             }
             else { NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> <color=white>You are not master client.</color>"); }
+        }
+        public static void SetGamemode(GameModeType gamemode)
+        {
+            NetworkSystem.Instance.ReturnToSinglePlayer();
+            GorillaComputer.instance.SetGameModeWithoutButton(gamemode.ToString());
         }
 
         public static void UnguardianGun()
