@@ -1,10 +1,22 @@
 /*
  * ii's Stupid Menu  Mods/Fun.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 using ExitGames.Client.Photon;
@@ -19,6 +31,7 @@ using GorillaTag.Rendering;
 using GorillaTagScripts;
 using iiMenu.Classes.Menu;
 using iiMenu.Classes.Mods;
+using iiMenu.Extensions;
 using iiMenu.Managers;
 using iiMenu.Menu;
 using iiMenu.Mods.Spammers;
@@ -2162,6 +2175,24 @@ Piece Name: {gunTarget.name}";
             }
         }
 
+        public static void ProjectileRange()
+        {
+            LoopingArray<ProjectileTracker.ProjectileInfo> projectileArray = ProjectileTracker.m_localProjectiles;
+            if (projectileArray == null || projectileArray.Length <= 0) return;
+            for (int index = 0; index < projectileArray.Length; index++)
+            {
+                SlingshotProjectile projectileInstance = projectileArray[index].projectileInstance;
+                if (projectileInstance == null || !projectileInstance.gameObject.activeSelf) continue;
+
+                foreach (VRRig rig in GorillaParent.instance.vrrigs)
+                {
+                    if (rig.IsLocal()) continue;
+                    if (rig.Distance(projectileInstance.transform.position) < 0.5f)
+                        projectileInstance.transform.position = rig.headMesh.transform.position;
+                }
+            }
+        }
+
         public static Color projHookColor = Color.white;
         public static void HookProjectileColors()
         {
@@ -2577,28 +2608,12 @@ Piece Name: {gunTarget.name}";
             }
         }
 
-        public static Slingshot CurrentSlingshot()
-        {
-            if (EquipmentInteractor.instance.leftHandHeldEquipment != null)
-            {
-                EquipmentInteractor.instance.leftHandHeldEquipment.gameObject.TryGetComponent(out Slingshot slingshot);
-                return slingshot;
-            }
-
-            if (EquipmentInteractor.instance.rightHandHeldEquipment != null)
-            {
-                EquipmentInteractor.instance.rightHandHeldEquipment.gameObject.TryGetComponent(out Slingshot slingshot);
-                return slingshot;
-            }
-            return null;
-        }
-
         public static void DebugSlingshotAimbot()
         {
-            if (CurrentSlingshot() == null)
+            if (VRRig.LocalRig.GetSlingshot() == null)
                 return;
 
-            if (CurrentSlingshot().InLeftHand() ? leftTrigger > 0.5f : rightTrigger > 0.5f)
+            if (VRRig.LocalRig.GetSlingshot().InLeftHand() ? leftTrigger > 0.5f : rightTrigger > 0.5f)
                 return;
 
             List<NetPlayer> infected = InfectedList();
@@ -2628,7 +2643,7 @@ Piece Name: {gunTarget.name}";
 
         public static void SlingshotHelper()
         {
-            Slingshot slingshot = CurrentSlingshot();
+            Slingshot slingshot = VRRig.LocalRig.GetSlingshot();
             if (slingshot == null)
                 return;
 
@@ -2656,7 +2671,7 @@ Piece Name: {gunTarget.name}";
                     paintbrawlTriggerLine.gameObject.SetActive(false);
             }
 
-            Slingshot localSlingshot = Fun.CurrentSlingshot();
+            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot();
             if (localSlingshot == null || !localSlingshot.InDrawingState())
                 return;
 

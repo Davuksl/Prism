@@ -1,10 +1,22 @@
 /*
  * ii's Stupid Menu  Notifications/Library.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 using iiMenu.Classes.Menu;
@@ -282,10 +294,24 @@ namespace iiMenu.Notifications
                     if (inputTextColor != "green")
                         NotificationText = NotificationText.Replace("<color=green>", "<color=" + inputTextColor + ">");
 
+                    NotificationText = NotificationText.TrimEnd('\n', '\r');
+
                     if (PreviousNotifi == NotificationText && stackNotifications)
                     {
                         NotifiCounter++;
-                        NotifiText.text = $"{NotificationText} {(NotifiCounter >= 1 ? $"<color=grey>(x{NotifiCounter + 1})</color>" : "")}";
+
+                        string[] lines = NotifiText.text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+                        if (lines.Length > 0)
+                        {
+                            string lastLine = lines[lines.Length - 1];
+                            int counterIndex = lastLine.IndexOf(" <color=grey>(x");
+                            if (counterIndex > 0)
+                                lastLine = lastLine.Substring(0, counterIndex);
+
+                            lines[^1] = $"{lastLine} <color=grey>(x{NotifiCounter + 1})</color>";
+                            NotifiText.text = string.Join(Environment.NewLine, lines);
+                        }
 
                         if (clearCoroutines.Count > 0)
                             CancelClear(clearCoroutines[0]);
@@ -295,14 +321,13 @@ namespace iiMenu.Notifications
                         NotifiCounter = 0;
                         PreviousNotifi = NotificationText;
 
-                        if (!NotificationText.Contains(Environment.NewLine))
-                            NotificationText += Environment.NewLine;
-
-                        if (!string.IsNullOrEmpty(NotifiText.text) &&
-                            !NotifiText.text.EndsWith(Environment.NewLine))
-                            NotifiText.text += Environment.NewLine;
-
-                        NotifiText.text += NotificationText;
+                        if (!string.IsNullOrEmpty(NotifiText.text))
+                        {
+                            string currentText = NotifiText.text.TrimEnd('\n', '\r');
+                            NotifiText.text = currentText + Environment.NewLine + NotificationText;
+                        }
+                        else
+                            NotifiText.text = NotificationText;
                     }
 
                     CoroutineManager.RunCoroutine(TrackCoroutine(ClearHolder(clearTime / 1000f)));
@@ -342,13 +367,25 @@ namespace iiMenu.Notifications
 
         public static void ClearPastNotifications(int amount)
         {
-            string text = "";
-            foreach (string text2 in Enumerable.Skip(NotifiText.text.Split(Environment.NewLine.ToCharArray()), amount))
+            if (string.IsNullOrEmpty(NotifiText.text))
+                return;
+
+            string[] lines = NotifiText.text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (amount >= lines.Length)
             {
-                if (text2 != "")
-                    text = text + text2 + "\n";
+                NotifiText.text = "";
+                return;
             }
-            NotifiText.text = text;
+
+            List<string> remainingLines = new List<string>();
+            for (int i = amount; i < lines.Length; i++)
+            {
+                remainingLines.Add(lines[i]);
+            }
+
+            NotifiText.text = string.Join(Environment.NewLine, remainingLines);
+            NotifiText.text = NotifiText.text.TrimEnd('\n', '\r');
         }
 
         private static IEnumerator TrackCoroutine(IEnumerator routine)

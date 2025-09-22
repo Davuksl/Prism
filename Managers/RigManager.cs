@@ -1,13 +1,26 @@
 /*
  * ii's Stupid Menu  Managers/RigManager.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using Photon.Pun;
+using iiMenu.Extensions;
+using Photon.Pun;
 using Photon.Realtime;
 using PlayFab;
 using PlayFab.ClientModels;
@@ -46,10 +59,7 @@ namespace iiMenu.Managers
             GetNetworkViewFromVRRig(p).GetView;
 
         public static VRRig GetClosestVRRig() =>
-            GorillaParent.instance.vrrigs
-                .Where(rig => rig != null && !rig.isLocal)
-                .OrderBy(rig => Vector3.Distance(rig.transform.position, GorillaTagger.Instance.bodyCollider.transform.position))
-                .FirstOrDefault();
+            VRRig.LocalRig.GetClosest();
 
         public static Dictionary<string, float> waitingForCreationDate = new Dictionary<string, float>();
         public static Dictionary<string, string> creationDateCache = new Dictionary<string, string>();

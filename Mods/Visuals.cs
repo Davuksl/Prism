@@ -1,10 +1,22 @@
 /*
  * ii's Stupid Menu  Mods/Visuals.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 using GorillaExtensions;
@@ -14,6 +26,7 @@ using GorillaNetworking;
 using GorillaTag.Rendering;
 using iiMenu.Classes.Menu;
 using iiMenu.Classes.Mods;
+using iiMenu.Extensions;
 using iiMenu.Patches.Menu;
 using Photon.Pun;
 using System;
@@ -846,6 +859,64 @@ namespace iiMenu.Mods
 
             LoopProjectileArray(ProjectileTracker.m_localProjectiles);
 
+            foreach (VRRig rig in GorillaParent.instance.vrrigs)
+            {
+                if (rig.IsLocal()) continue;
+
+                Slingshot playerSlingshot = rig.GetSlingshot();
+                if (playerSlingshot != null)
+                {
+                    if (playerSlingshot.InDrawingState() && playerSlingshot.dummyProjectile != null)
+                    {
+                        SlingshotProjectile projectileInstance = playerSlingshot.dummyProjectile.GetComponent<SlingshotProjectile>();
+                        if (projectileInstance == null || !projectileInstance.gameObject.activeSelf) continue;
+
+                        if (!trajectoryPool.TryGetValue(projectileInstance, out LineRenderer Line))
+                        {
+                            GameObject LineObject = new GameObject("LineObject");
+                            Line = LineObject.AddComponent<LineRenderer>();
+                            if (smoothLines)
+                            {
+                                Line.numCapVertices = 10;
+                                Line.numCornerVertices = 5;
+                            }
+                            Line.material.shader = Shader.Find("GUI/Text Shader");
+                            Line.startWidth = 0.025f;
+                            Line.endWidth = 0.025f;
+                            Line.positionCount = 25;
+                            Line.useWorldSpace = true;
+                            trajectoryPool.Add(projectileInstance, Line);
+                        }
+
+                        Line.gameObject.SetActive(true);
+
+                        if (hoc)
+                            Line.gameObject.layer = 19;
+
+                        Color color = rig.GetColor();
+
+                        if (fmt)
+                            color = backgroundColor.GetCurrentColor();
+                        if (tt)
+                            color = new Color(color.r, color.g, color.b, 0.5f);
+
+                        float width = thinTracers ? 0.0075f : 0.025f;
+                        Line.startWidth = width;
+                        Line.endWidth = width;
+
+                        Line.startColor = color;
+                        Line.endColor = color;
+
+                        Vector3 position = playerSlingshot.GetTrueLaunchPosition();
+                        Vector3 velocity = playerSlingshot.GetNetworkedLaunchVelocity();
+
+                        Vector3 gravity = Physics.gravity + (projectileInstance.forceComponent?.force ?? Vector3.zero);
+
+                        DrawTrajectory(position, velocity, Line, NoInvisLayerMask(), gravity);
+                    }
+                }
+            }
+
             if (localTrajectoryLine != null)
             {
                 if (!localTrajectoryLine.gameObject.activeSelf)
@@ -857,7 +928,7 @@ namespace iiMenu.Mods
                     localTrajectoryLine.gameObject.SetActive(false);
             }
 
-            Slingshot localSlingshot = Fun.CurrentSlingshot();
+            Slingshot localSlingshot = VRRig.LocalRig.GetSlingshot();
             if (localSlingshot == null || !localSlingshot.InDrawingState())
                 return;
 
@@ -896,7 +967,7 @@ namespace iiMenu.Mods
             localTrajectoryLine.startColor = localColor;
             localTrajectoryLine.endColor = localColor;
 
-            Vector3 localPosition = localSlingshot.drawingHand.transform.position + (localSlingshot.centerOrigin.position - localSlingshot.drawingHand.transform.position).normalized * (EquipmentInteractor.instance.grabRadius - localSlingshot.dummyProjectileColliderRadius) * (localSlingshot.dummyProjectileInitialScale * Mathf.Abs(localSlingshot.transform.lossyScale.x));
+            Vector3 localPosition = localSlingshot.GetTrueLaunchPosition();
             Vector3 localVelocity = localSlingshot.GetLaunchVelocity();
 
             DrawTrajectory(localPosition, localVelocity, localTrajectoryLine, NoInvisLayerMask(), Vector3.down * 10.79f);
@@ -952,7 +1023,7 @@ namespace iiMenu.Mods
 
             if (hitPlayer != null)
             {
-                if (PlayerIsLocal(hitPlayer))
+                if (hitPlayer.IsLocal())
                     lineColor = Color.red;
                 else
                     lineColor = Color.green;

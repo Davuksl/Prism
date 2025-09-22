@@ -1,10 +1,22 @@
 /*
  * ii's Stupid Menu  Mods/Movement.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 ﻿using BepInEx;
@@ -723,7 +735,7 @@ namespace iiMenu.Mods
                 Vector3 raycastPosition = GorillaTagger.Instance.bodyCollider.transform.position
                     + (Vector3.up * 5f)
                     + (direction * Time.deltaTime * driveSpeed);
-                Physics.Raycast(raycastPosition, Vector3.down, out var Ray, 16f, GTPlayer.Instance.locomotionEnabledLayers);
+                Physics.Raycast(raycastPosition, Vector3.down, out var Ray, 50f, GTPlayer.Instance.locomotionEnabledLayers);
 
                 Vector3 targetPosition = Ray.point == Vector3.zero ? raycastPosition : Ray.point;
 
@@ -3323,10 +3335,10 @@ namespace iiMenu.Mods
         {
             float[] timerPowers = new float[]
             {
-                0.75f,
+                0.5f,
                 1.25f,
-                1.5f,
-                2f
+                2f,
+                5f
             };
             string[] timerNames = new string[]
             {
@@ -3345,7 +3357,7 @@ namespace iiMenu.Mods
             if (timerPowerIndex < 0)
                 timerPowerIndex = timerPowers.Length - 1;
 
-            timerPower = timerPowers[predInt];
+            timerPower = timerPowers[timerPowerIndex];
             GetIndex("Change Timer Speed").overlapText = "Change Timer Speed <color=grey>[</color><color=green>" + timerNames[timerPowerIndex] + "</color><color=grey>]</color>";
         }
 
@@ -3357,7 +3369,7 @@ namespace iiMenu.Mods
 
             Rigidbody rb = GorillaTagger.Instance.rigidbody;
 
-            Vector3 displacement = rb.linearVelocity * Time.fixedDeltaTime * extraFactor;
+            Vector3 displacement = (rb.linearVelocity + Physics.gravity) * Time.fixedDeltaTime * extraFactor;
             rb.MovePosition(rb.position + displacement);
         }
 

@@ -188,6 +188,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Disable Menu Title", method =() => { if (pageButtonType == 1) buttonOffset = 1; else buttonOffset = -1; hidetitle = true; }, disableMethod =() => { if (pageButtonType == 1) buttonOffset = 2; else buttonOffset = 0; hidetitle = false; }, toolTip = "Hides the menu title, allowing for more buttons per page."},
                 new ButtonInfo { buttonText = "Disable Search Button", enableMethod =() => disableSearchButton = true, disableMethod =() => disableSearchButton = false, toolTip = "Disables the search button at the bottom of the menu."},
                 new ButtonInfo { buttonText = "Disable Return Button", enableMethod =() => disableReturnButton = true, disableMethod =() => disableReturnButton = false, toolTip = "Disables the return button at the bottom of the menu."},
+                new ButtonInfo { buttonText = "Disable Shift Button", enableMethod =() => disableShift = true, disableMethod =() => disableShift = false, toolTip = "Disables the ability to type capital letters when holding left trigger."},
                 new ButtonInfo { buttonText = "Info Button", enableMethod =() => enableDebugButton = true, disableMethod =() => enableDebugButton = false, toolTip = "Shows an information button at the bottom of the menu."},
                 new ButtonInfo { buttonText = "Disable Page Buttons", enableMethod =() => Settings.DisablePageButtons(), disableMethod =() => disablePageButtons = false, toolTip = "Disables the page buttons. Recommended with Joystick Menu."},
                 new ButtonInfo { buttonText = "Disable Page Number", enableMethod =() => noPageNumber = true, disableMethod =() => noPageNumber = false, toolTip = "Disables the current page number in the title text."},
@@ -479,7 +480,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Grappling Hooks", method =() => Movement.GrapplingHooks(), disableMethod =() => Movement.DisableSpiderMan(), toolTip = "Gives you grappling hooks, use your <color=green>grips</color> to shoot them."},
                 
                 new ButtonInfo { buttonText = "Drive <color=grey>[</color><color=green>J</color><color=grey>]</color>", method =() => Movement.Drive(), toolTip = "Lets you drive around in your invisible car. Use the <color=green>joystick</color> to move."},
-                new ButtonInfo { buttonText = "Hard Drive <color=grey>[</color><color=green>J</color><color=grey>]</color>", method =() => Movement.HardDrive(), toolTip = "Similar to drive, but locks you to the ground."},
+                new ButtonInfo { buttonText = "Hard Drive <color=grey>[</color><color=green>J</color><color=grey>]</color>", overlapText = "Sticky Drive <color=grey>[</color><color=green>J</color><color=grey>]</color>", method =() => Movement.HardDrive(), toolTip = "Similar to drive, but locks you to the ground."},
 
                 new ButtonInfo { buttonText = "Noclip <color=grey>[</color><color=green>T</color><color=grey>]</color>", method =() => Movement.Noclip(), toolTip = "Makes you go through objects when holding <color=green>trigger</color>."},
                 new ButtonInfo { buttonText = "Up And Down", method =() => Movement.UpAndDown(), toolTip = "Makes you go up when holding your <color=green>trigger</color>, and down when holding your <color=green>grip</color>."},
@@ -603,7 +604,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Spin Rig Body", method =() => Movement.SetBodyPatch(true), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Makes your body spin around, but not your head."},
                 new ButtonInfo { buttonText = "Spaz Rig Body", method =() => Movement.SetBodyPatch(true, 1), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Gives your body a seizure, randomizing its rotation."},
                 new ButtonInfo { buttonText = "Reverse Rig Body", method =() => Movement.SetBodyPatch(true, 2), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Flips your body around backwards, but not your head."},
-                new ButtonInfo { buttonText = "Rec Room Body", method =() => Movement.RecRoomBody(), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Flips your body around backwards, but not your head."},
+                new ButtonInfo { buttonText = "Rec Room Body", method =() => Movement.RecRoomBody(), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Makes your rig like how the Rec Room bodies are."},
                 new ButtonInfo { buttonText = "Freeze Body Rotation <color=grey>[</color><color=green>G</color><color=grey>]</color>", method =() => Movement.FreezeBodyRotation(), disableMethod =() => Movement.SetBodyPatch(false), toolTip = "Freezes your body rotation in place, but not your head, when holding <color=green>grip</color>."},
 
                 new ButtonInfo { buttonText = "Auto Dance <color=grey>[</color><color=green>A</color><color=grey>]</color>", method =() => Movement.AutoDance(), toolTip = "Makes you dance when holding <color=green>A</color>."},
@@ -720,7 +721,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Fake Unban Self", method =() => Visuals.FakeUnbanSelf(), isTogglable = false, toolTip = "Makes it appear as if you're not banned." },
 
                 new ButtonInfo { buttonText = "Jump Predictions", overlapText = "Jump Trajectories", method =() => Visuals.JumpPredictions(), disableMethod =() => Visuals.DisableJumpPredictions(), toolTip = "Shows a visualizer of where the other players will jump."},
-                new ButtonInfo { buttonText = "Paintbrawl Trajectories", method =() => Visuals.PaintbrawlTrajectories(), disableMethod =() => Visuals.DisablePaintbrawlTrajectories(), toolTip = "Shows a visualizer of where all slingshot projectiles and your slingshot will hit."},
+                new ButtonInfo { buttonText = "Paintbrawl Trajectories", overlapText = "Projectile Trajectories", method =() => Visuals.PaintbrawlTrajectories(), disableMethod =() => Visuals.DisablePaintbrawlTrajectories(), toolTip = "Shows a visualizer of where all projectiles and your slingshot will hit."},
 
                 new ButtonInfo { buttonText = "Audio Visualizer", enableMethod =() => Visuals.CreateAudioVisualizer(), method =() => Visuals.AudioVisualizer(), disableMethod =() => Visuals.DestroyAudioVisualizer(), toolTip = "Shows a visualizer of your microphone loudness below your player."},
                 new ButtonInfo { buttonText = "Show Server Position", method =() => Visuals.ShowServerPosition(), disableMethod =() => Visuals.DisableShowServerPosition(), toolTip = "Shows your current syncronized position on the server."},
@@ -950,10 +951,10 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Slow Throw", method =() => { VelocityPatch.enabled = true; VelocityPatch.multipleFactor = 0.1f; }, disableMethod =() => VelocityPatch.enabled = false, toolTip = "Multiplies your throw factor by 0.1."},
 
                 new ButtonInfo { buttonText = "Angry Birds", enableMethod =() => GetLaunchPatch.angryBirds = true, disableMethod =() => GetLaunchPatch.angryBirds = false, toolTip = "Flings you in whatever direction your slingshot's projectiles are heading."},
-                new ButtonInfo { buttonText = "Paintbrawl Aimbot", enableMethod =() => GetLaunchPatch.enabled = true, method =() => Fun.DebugSlingshotAimbot(), disableMethod =() => GetLaunchPatch.enabled = false, toolTip = "Redirects your slingshot to the closest nearby players."},
+                new ButtonInfo { buttonText = "Paintbrawl Aimbot", overlapText = "Slingshot Aimbot", enableMethod =() => GetLaunchPatch.enabled = true, method =() => Fun.DebugSlingshotAimbot(), disableMethod =() => GetLaunchPatch.enabled = false, toolTip = "Redirects your slingshot to the closest nearby players."},
                 new ButtonInfo { buttonText = "Slingshot Helper", method =() => Fun.SlingshotHelper(), toolTip = "Helps you grab the small paintball on your slingshot."},
                 new ButtonInfo { buttonText = "Slingshot Trigger Bot", method =() => Fun.SlingshotTriggerBot(), toolTip = "Releases the small paintball on your slingshot when hovering over another player."},
-
+                
                 new ButtonInfo { buttonText = "Paintbrawl Kill Self", method =() => Advantages.PaintbrawlKillSelf(), toolTip = "Kills yourself in paintbrawl." },
                 new ButtonInfo { buttonText = "Paintbrawl Kill Gun", method =() => Advantages.PaintbrawlKillGun(), toolTip = "Kills whoever your hand desires in paintbrawl." },
                 new ButtonInfo { buttonText = "Paintbrawl Kill All", method =() => Advantages.PaintbrawlKillAll(), toolTip = "Kills everyone in the room in paintbrawl." },
@@ -965,6 +966,8 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Fast Snowballs", overlapText = "Fast Projectiles", method =() => Fun.FastSnowballs(), disableMethod =() => Fun.FixSnowballs(), toolTip = "Makes projectiles go really fast when thrown."},
                 new ButtonInfo { buttonText = "Slow Snowballs", overlapText = "Slow Projectiles", method =() => Fun.SlowSnowballs(), disableMethod =() => Fun.FixSnowballs(), toolTip = "Makes projectiles go really slow when thrown."},
+
+                new ButtonInfo { buttonText = "Projectile Range", method =() => Fun.ProjectileRange(), toolTip = "Increases the hitbox scale of your projectiles."},
 
                 new ButtonInfo { buttonText = "Rainbow Held Projectiles", enableMethod =() => Fun.HookProjectileColors(), method =() => Fun.projHookColor = Color.HSVToRGB((Time.frameCount / 180f) % 1f, 1f, 1f), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Changes your projectile's color to be rainbow"},
                 new ButtonInfo { buttonText = "Flash Held Projectiles", enableMethod =() => Fun.HookProjectileColors(), method =() => Fun.projHookColor = Time.time % 0.2f > 0.1f ? Color.white : Color.black, disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Changes your projectile's color to be rainbow"},
@@ -1209,14 +1212,14 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Hard Rainbow Color", method =() => Fun.HardRainbowColor(), toolTip = "Makes your character flash from red, green, blue, and magenta." },
 
                 new ButtonInfo { buttonText = "Become \"goldentrophy\"", method =() => Fun.BecomePlayer("goldentrophy", new Color32(255, 128, 0, 255)), isTogglable = false, toolTip = "Sets your name to \"goldentrophy\" and color to orange." },
-                new ButtonInfo { buttonText = "Become \"PBBV\"", method =() => Fun.BecomePlayer("PBBV", new Color32(230, 127, 102, 255)), isTogglable = false, toolTip = "Sets your name to \"PBBV\" and color to sky blue." },
+                new ButtonInfo { buttonText = "Become \"PBBV\"", method =() => Fun.BecomePlayer("PBBV", new Color32(230, 127, 102, 255)), isTogglable = false, toolTip = "Sets your name to \"PBBV\" and color to salmon." },
                 new ButtonInfo { buttonText = "Become \"J3VU\"", method =() => Fun.BecomePlayer("J3VU", Color.green), isTogglable = false, toolTip = "Sets your name to \"J3VU\" and color to green." },
-                new ButtonInfo { buttonText = "Become \"ECHO\"", method =() => Fun.BecomePlayer("ECHO", new Color32(0, 150, 255, 255)), isTogglable = false, toolTip = "Sets your name to \"ECHO\" and color to salmon." },
+                new ButtonInfo { buttonText = "Become \"ECHO\"", method =() => Fun.BecomePlayer("ECHO", new Color32(0, 150, 255, 255)), isTogglable = false, toolTip = "Sets your name to \"ECHO\" and color to sky blue." },
                 new ButtonInfo { buttonText = "Become \"DAISY09\"", method =() => Fun.BecomePlayer("DAISY09", new Color32(255, 81, 231, 255)), isTogglable = false, toolTip = "Sets your name to \"DAISY09\" and color to a light pink." },
                 new ButtonInfo { buttonText = "Become \"STATUE\"", method =() => Fun.BecomePlayer("STATUE", Color.black), isTogglable = false, toolTip = "Sets your name to \"STATUE\" and color to black." },
                 new ButtonInfo { buttonText = "Become Child", method =() => Fun.BecomeMinigamesKid(), isTogglable = false, toolTip = "Sets your name and color to something a child would pick." },
 
-                new ButtonInfo { buttonText = "Become Hidden on Leaderboard", method =() => Fun.BecomePlayer("I", new Color32(0, 53, 2, 255)), isTogglable = false, toolTip = "Sets your name to nothing and your color to a dark red, matching the leaderboard." },
+                new ButtonInfo { buttonText = "Become Hidden on Leaderboard", method =() => Fun.BecomePlayer("I", new Color32(0, 53, 2, 255)), isTogglable = false, toolTip = "Sets your name to nothing and your color to a dark green, matching the leaderboard." },
                 new ButtonInfo { buttonText = "Copy Identity Gun", method =() => Fun.CopyIdentityGun(), toolTip = "Steals the identity of whoever your hand desires." },
 
                 new ButtonInfo { buttonText = "Change Accessories", overlapText = "Change Cosmetics", method =() => Fun.ChangeAccessories(), toolTip = "Use your grips to change what hat you're wearing." },
