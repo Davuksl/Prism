@@ -21,7 +21,7 @@ namespace iiMenu.Menu
     {
         private static UI instance;
 
-        private string inputText = "goldentrophy";
+        private string inputText = "name";
         private static GUIStyle labelStyle;
 
         private string r = "255";
@@ -37,7 +37,7 @@ namespace iiMenu.Menu
         {
             instance = this;
 
-            if (File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_HideGUI.txt"))
+            if (File.Exists($"{PluginInfo.BaseDirectory}/DMenu_HideGUI.txt"))
                 isOpen = false;
         }
 
@@ -50,12 +50,12 @@ namespace iiMenu.Menu
                 isOpen = !isOpen;
                 if (isOpen)
                 {
-                    if (File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_HideGUI.txt"))
+                    if (File.Exists($"{PluginInfo.BaseDirectory}/DMenu_HideGUI.txt"))
                         File.Delete($"{PluginInfo.BaseDirectory}/iiMenu_HideGUI.txt");
                 } else
                 {
-                    if (!File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_HideGUI.txt"))
-                        File.WriteAllText($"{PluginInfo.BaseDirectory}/iiMenu_HideGUI.txt", "true");
+                    if (!File.Exists($"{PluginInfo.BaseDirectory}/DMenu_HideGUI.txt"))
+                        File.WriteAllText($"{PluginInfo.BaseDirectory}/DMenu_HideGUI.txt", "true");
                 }
             }
             lastCondition = isKeyboardCondition;

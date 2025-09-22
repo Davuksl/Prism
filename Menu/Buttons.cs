@@ -39,7 +39,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Movement Mods", method =() => currentCategoryName = "Movement Mods", isTogglable = false, toolTip = "Opens the movement mods."},
                 new ButtonInfo { buttonText = "Advantage Mods", method =() => currentCategoryName = "Advantage Mods", isTogglable = false, toolTip = "Opens the advantage giving mods."},
                 new ButtonInfo { buttonText = "Visual Mods", method =() => currentCategoryName = "Visual Mods", isTogglable = false, toolTip = "Opens the visual mods."},
-                new ButtonInfo { buttonText = "Fun Mods", method =() => currentCategoryName = "Fun Mods", isTogglable = false, toolTip = "Opens the fun mods."},
+                // don't need rn new ButtonInfo { buttonText = "Fun Mods", method =() => currentCategoryName = "Fun Mods", isTogglable = false, toolTip = "Opens the fun mods."},
                 //new ButtonInfo { buttonText = "Spam Mods", method =() => currentCategoryName = "Spam Mods", isTogglable = false, toolTip = "Opens the spam mods."},
                 //new ButtonInfo { buttonText = "Master Mods", method =() => currentCategoryName = "Master Mods", isTogglable = false, toolTip = "Opens the master mods."},
                 new ButtonInfo { buttonText = "Overpowered Mods", method =() => currentCategoryName = "Overpowered Mods", isTogglable = false, toolTip = "Opens the overpowered mods."},
@@ -1520,7 +1520,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Delay Ban Gun", method =() => Overpowered.DelayBanGun(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod =() => Overpowered.DelayBanAll(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},*/
-
+                new ButtonInfo { buttonText = "Crash All", method =() => Overpowered.crashmaybe(), toolTip = "Crashes people"},
                 new ButtonInfo { buttonText = "Force Grab", method =() => Overpowered.ForceGrab(), toolTip = "Attempts to grab the hand of anyone who presses their grips." },
                 new ButtonInfo { buttonText = "Kick on Grab", method =() => Overpowered.TowardsPositionOnGrab(new Vector3(-71.33718f, 101.4977f, -93.09029f)), toolTip = "Kicks the player when they grab you." },
                 new ButtonInfo { buttonText = "Crash on Grab", method =() => Overpowered.DirectionOnGrab(Vector3.one), toolTip = "Crashes the player when they grab you." },

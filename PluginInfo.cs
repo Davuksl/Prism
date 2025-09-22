@@ -6,7 +6,7 @@
         public const string Name = "Prism";
         public const string Description = "nothing";
         public const string Version = "1.0";
-        public const string BuildTimestamp = "2025-09-21T18:31:32Z";
+        public const string BuildTimestamp = "2025-09-21T19:58:27Z";
         public const string BaseDirectory = "Prism";
         public const string ResourceURL = "https://github.com/iiDk-the-actual/ModInfo/raw/main";
 

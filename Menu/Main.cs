@@ -6448,7 +6448,7 @@ jgs \_   _/ |Oo\
         public static List<string> muteIDs = new List<string>();
         public static List<string> mutedIDs = new List<string>();
 
-        public static string serverLink = "https://discord.gg/iidk";
+        public static string serverLink = "https://prism.dmenu.me";
 
         public static int[] bones = new int[] {
             4, 3, 5, 4, 19, 18, 20, 19, 3, 18, 21, 20, 22, 21, 25, 21, 29, 21, 31, 29, 27, 25, 24, 22, 6, 5, 7, 6, 10, 6, 14, 6, 16, 14, 12, 10, 9, 7

