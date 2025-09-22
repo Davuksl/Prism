@@ -1,13 +1,5 @@
-﻿/*
- * ii's Stupid Menu  PluginInfo.cs
- * Copyright (C) 2025  Goldentrophy Software
- * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
- * Licensed under the GPL-3.0 license
- * https://www.gnu.org/licenses/gpl-3.0.html
- */
-
-﻿namespace iiMenu
+﻿// Woooo, it's scary that a non-existent company will sue me💀💀
+namespace iiMenu
 {
     public static class PluginInfo
     {

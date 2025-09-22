@@ -110,6 +110,7 @@ namespace iiMenu.Mods
             }
             else { NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> <color=white>You are not master client.</color>"); }
         }
+        // holy shit this exploit still works
         public static void crashmaybe()
         {
             var options = new RaiseEventOptions

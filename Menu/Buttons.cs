@@ -1459,7 +1459,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Paintbrawl Revive Self", method =() => Advantages.PaintbrawlReviveSelf(), isTogglable = false, toolTip = "Revives yourself in paintbrawl." },
                 new ButtonInfo { buttonText = "Paintbrawl Revive Gun", method =() => Advantages.PaintbrawlReviveGun(), toolTip = "Revives whoever your hand desires in paintbrawl." },
                 new ButtonInfo { buttonText = "Paintbrawl Revive All", method =() => Advantages.PaintbrawlReviveAll(), isTogglable = false, toolTip = "Revives everyone in paintbrawl." },
-
+                // i am just interesting does someone know why does iidk trying to scare us with "GoldenTrophy Software"
                 new ButtonInfo { buttonText = "Paintbrawl God Mode", method =() => Advantages.PaintbrawlGodMode(), toolTip = "Gives you god mode in paintbrawl." },
 
                 new ButtonInfo { buttonText = "Slow Self", method =() => Overpowered.SlowSelf(), isTogglable = false, toolTip = "Forces tag freeze on yourself." },
@@ -1523,7 +1523,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Delay Ban Gun", method =() => Overpowered.DelayBanGun(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod =() => Overpowered.DelayBanAll(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},*/
-                new ButtonInfo { buttonText = "Crash All", method =() => Overpowered.crashmaybe(), toolTip = "Crashes people"},
+                new ButtonInfo { buttonText = "Insta Crash All", method =() => Overpowered.crashmaybe(), toolTip = "Crashes people"},
                 new ButtonInfo { buttonText = "Force Grab", method =() => Overpowered.ForceGrab(), toolTip = "Attempts to grab the hand of anyone who presses their grips." },
                 new ButtonInfo { buttonText = "Kick on Grab", method =() => Overpowered.TowardsPositionOnGrab(new Vector3(-71.33718f, 101.4977f, -93.09029f)), toolTip = "Kicks the player when they grab you." },
                 new ButtonInfo { buttonText = "Crash on Grab", method =() => Overpowered.DirectionOnGrab(Vector3.one), toolTip = "Crashes the player when they grab you." },
