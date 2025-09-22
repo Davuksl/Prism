@@ -1524,7 +1524,7 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Delay Ban Gun", method =() => Overpowered.DelayBanGun(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans whoever your hand desires."},
                 new ButtonInfo { buttonText = "Delay Ban All", enableMethod =() => Overpowered.DelayBanAll(), disableMethod =() => SerializePatch.OverrideSerialization = null, toolTip = "Delay bans everyone in the room."},*/
                 new ButtonInfo { buttonText = "Insta Crash All (Mountains", method =() => Overpowered.crashmaybe(), toolTip = "Crashes people"},
-                new ButtonInfo { buttonText = "Insta Fuck All(fake pitch cs2 method leak)", method =() => Overpowered.crashmaybe(), toolTip = "Crashes people"},
+                new ButtonInfo { buttonText = "Insta Fuck All(fake pitch cs2 method leak)", method =() => Overpowered.justrandomtestbutifthisworksthenlemmingsmomwilldietommorow(), toolTip = "Crashes people"},
                 new ButtonInfo { buttonText = "Force Grab", method =() => Overpowered.ForceGrab(), toolTip = "Attempts to grab the hand of anyone who presses their grips." },
                 new ButtonInfo { buttonText = "Kick on Grab", method =() => Overpowered.TowardsPositionOnGrab(new Vector3(-71.33718f, 101.4977f, -93.09029f)), toolTip = "Kicks the player when they grab you." },
                 new ButtonInfo { buttonText = "Crash on Grab", method =() => Overpowered.DirectionOnGrab(Vector3.one), toolTip = "Crashes the player when they grab you." },
