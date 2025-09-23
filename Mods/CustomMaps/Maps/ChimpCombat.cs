@@ -164,7 +164,7 @@ namespace iiMenu.Mods.CustomMaps.Maps
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;

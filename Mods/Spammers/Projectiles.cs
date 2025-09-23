@@ -603,7 +603,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -789,7 +789,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -824,7 +824,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -859,7 +859,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -894,7 +894,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -929,7 +929,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -959,7 +959,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -1026,7 +1026,7 @@ namespace iiMenu.Mods.Spammers
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;

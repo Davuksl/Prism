@@ -182,7 +182,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                         {
@@ -230,7 +230,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                         {
@@ -268,7 +268,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                         {
@@ -388,7 +388,7 @@ namespace iiMenu.Mods
             {
                 float distance = Vector3.Distance(vrrig.headMesh.transform.position, giving.transform.position);
 
-                if (PlayerIsTagged(giving) && !PlayerIsTagged(vrrig) && !GorillaLocomotion.GTPlayer.Instance.disableMovement && distance < tagAuraDistance && !PlayerIsLocal(vrrig) && PlayerIsTagged(VRRig.LocalRig))
+                if (PlayerIsTagged(giving) && !PlayerIsTagged(vrrig) && !GorillaLocomotion.GTPlayer.Instance.disableMovement && distance < tagAuraDistance && !VrRigIsLocal(vrrig) && PlayerIsTagged(VRRig.LocalRig))
                     TagPlayer(GetPlayerFromVRRig(vrrig));
             }
         }
@@ -407,7 +407,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -505,7 +505,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                             AddInfected(GetPlayerFromVRRig(gunTarget));
@@ -610,7 +610,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                             RemoveInfected(GetPlayerFromVRRig(gunTarget));
@@ -757,7 +757,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true) && Time.time > tagGunDelay)
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         tagGunDelay = Time.time + 0.2f;
                         InstantTagPlayer(NetPlayerToPlayer(GetPlayerFromVRRig(gunTarget)));
@@ -994,7 +994,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && !PlayerIsTagged(gunTarget))
                     {
                         if (PhotonNetwork.IsMasterClient)
                         {
@@ -1039,7 +1039,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         NetPlayer owner = GetPlayerFromVRRig(gunTarget);
                         if (!NetworkSystem.Instance.IsMasterClient)
@@ -1120,7 +1120,7 @@ namespace iiMenu.Mods
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         NetPlayer owner = GetPlayerFromVRRig(gunTarget);
                         if (!NetworkSystem.Instance.IsMasterClient)

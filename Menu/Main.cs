@@ -4302,8 +4302,10 @@ namespace iiMenu.Menu
             return infectedPlayers.Contains(targetPlayer);
         }
 
-        public static bool PlayerIsLocal(VRRig Player) => 
+        public static bool VrRigIsLocal(VRRig Player) => 
             Player.isLocal || Player == GhostRig;
+        public static bool PlayerIsLocal(Player Player) =>
+            Player.IsLocal;
 
         public static bool ShouldBypassChecks(NetPlayer Player) =>
              Player == (NetworkSystem.Instance.LocalPlayer ?? null) || FriendManager.IsPlayerFriend(Player) || ServerData.Administrators.ContainsKey(Player.UserId);

@@ -81,7 +81,7 @@ namespace iiMenu.Mods.CustomMaps.Maps
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -134,7 +134,7 @@ namespace iiMenu.Mods.CustomMaps.Maps
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;
@@ -176,7 +176,7 @@ namespace iiMenu.Mods.CustomMaps.Maps
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget) && Time.time > lucyDelay)
+                    if (gunTarget && !VrRigIsLocal(gunTarget) && Time.time > lucyDelay)
                     {
                         lucyDelay = Time.time + 0.2f;
                         PhotonNetwork.RaiseEvent(180, new object[] { "SummonLucy", (double)GetPlayerFromVRRig(lockTarget).ActorNumber }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, SendOptions.SendReliable);
@@ -226,7 +226,7 @@ namespace iiMenu.Mods.CustomMaps.Maps
                 if (GetGunInput(true))
                 {
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
-                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         gunLocked = true;
                         lockTarget = gunTarget;

@@ -8,7 +8,7 @@ namespace iiMenu.Extensions
     public static class VRRigExtensions
     {
         public static bool IsLocal(this VRRig rig) =>
-            PlayerIsLocal(rig);
+            VrRigIsLocal(rig);
 
         public static bool IsTagged(this VRRig rig) =>
             PlayerIsTagged(rig);
