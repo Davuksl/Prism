@@ -8,6 +8,7 @@ using GorillaLocomotion.Gameplay;
 using GorillaNetworking;
 using GorillaTagScripts;
 using iiMenu.Managers;
+using iiMenu.Mods.Spammers;
 using iiMenu.Notifications;
 using iiMenu.Patches.Menu;
 using Photon.Pun;
@@ -2717,19 +2718,216 @@ namespace iiMenu.Mods
 
         private static bool previousMuteValue;
         private static float freezeAllDelay;
+        private static float freezeAllNotificationDelay;
+        private static bool heldTriggerWhilePlayersCorrect;
+
+        public static void FreezeAll_OnPlayerLeave(NetPlayer player) =>
+            NotifiLib.SendNotification("<color=grey>[</color><color=green>FREEZE</color><color=grey>]</color> You may now use Freeze All.");
+
         public static void FreezeAll()
         {
+            if (!PhotonNetwork.InRoom) return;
+
             if (rightTrigger > 0.5f)
             {
-                if (Time.time > freezeAllDelay)
+                if (PhotonNetwork.PlayerList.Length < PhotonNetwork.CurrentRoom.MaxPlayers || heldTriggerWhilePlayersCorrect)
                 {
-                    previousMuteValue = !previousMuteValue;
-                    foreach (GorillaPlayerScoreboardLine line in GorillaScoreboardTotalUpdater.allScoreboardLines)
-                        GorillaPlayerScoreboardLine.MutePlayer(line.linePlayer.UserId, line.linePlayer.NickName, previousMuteValue ? 1 : 0);
+                    SerializePatch.OverrideSerialization = () => false;
 
-                    freezeAllDelay = Time.time + 0.1f;
+                    heldTriggerWhilePlayersCorrect = true;
+
+                    if (Time.time > freezeAllDelay)
+                    {
+                        for (int i = 0; i < 11; i++)
+                        {
+                            WebFlags flags = new WebFlags(1);
+                            NetEventOptions options = new NetEventOptions
+                            {
+                                Flags = flags,
+                                TargetActors = new[] { -1 }
+                            };
+                            byte code = 51;
+                            NetworkSystemRaiseEvent.RaiseEvent(code, new object[] { serverLink }, options, reliable: false);
+                        }
+
+                        RPCProtection();
+                        freezeAllDelay = Time.time + 0.1f;
+                    }
+                }
+                else
+                {
+                    if (Time.time > freezeAllNotificationDelay)
+                    {
+                        freezeAllNotificationDelay = Time.time + 0.1f;
+                        NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Please wait for a user to leave.");
+                    }
                 }
             }
+            else
+            {
+                SerializePatch.OverrideSerialization = null;
+                heldTriggerWhilePlayersCorrect = false;
+            }
+        }
+
+        public static float zaWarudoNotificationDelay;
+
+        public static Coroutine ZaWarudo_StartCoroutineVariable;
+        public static Coroutine ZaWarudo_EndCoroutineVariable;
+
+        public static AudioClip ZaWarudo_Start;
+        public static AudioClip ZaWarudo_Stop;
+
+        public static void ZaWarudo_enableMethod()
+        {
+            NetworkSystem.Instance.OnPlayerLeft += ZaWarudo_OnPlayerLeave;
+
+            //ZaWarudo_Start = LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Mods/Overpowered/Timestop/start.ogg", "Audio/Mods/Overpowered/Timestop/start.ogg");
+            //ZaWarudo_Stop = LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Mods/Overpowered/Timestop/end.ogg", "Audio/Mods/Overpowered/Timestop/end.ogg");
+        }
+
+        public static void ZaWarudo_OnPlayerLeave(NetPlayer player) =>
+            NotifiLib.SendNotification("<color=grey>[</color><color=green>FREEZE</color><color=grey>]</color> You may now use Za Warudo.");
+
+        public static void ZaWarudo()
+        {
+            if (!PhotonNetwork.InRoom) return;
+
+            if (rightTrigger > 0.5f && PhotonNetwork.PlayerList.Length < PhotonNetwork.CurrentRoom.MaxPlayers)
+            {
+                if (heldTriggerWhilePlayersCorrect || GetIndex("No Freeze Za Warudo").enabled)
+                {
+                    if (!GetIndex("No Freeze Za Warudo").enabled)
+                        SerializePatch.OverrideSerialization = () => false;
+
+                    if (!heldTriggerWhilePlayersCorrect)
+                    {
+                        if (ZaWarudo_StartCoroutineVariable != null)
+                        {
+                            CoroutineManager.instance.StopCoroutine(ZaWarudo_StartCoroutineVariable);
+                            ZaWarudo_StartCoroutineVariable = null;
+                        }
+
+                        if (ZaWarudo_EndCoroutineVariable != null)
+                        {
+                            CoroutineManager.instance.StopCoroutine(ZaWarudo_StartCoroutineVariable);
+                            ZaWarudo_EndCoroutineVariable = null;
+                        }
+
+                        ZaWarudo_StartCoroutineVariable = CoroutineManager.instance.StartCoroutine(ZaWarudo_StartCoroutine());
+                    }
+
+                    heldTriggerWhilePlayersCorrect = true;
+
+                    Movement.LowGravity();
+
+                    if (Time.time > freezeAllDelay && !GetIndex("No Freeze Za Warudo").enabled)
+                    {
+                        for (int i = 0; i < 11; i++)
+                        {
+                            WebFlags flags = new WebFlags(1);
+                            NetEventOptions options = new NetEventOptions
+                            {
+                                Flags = flags,
+                                TargetActors = new[] { -1 }
+                            };
+                            byte code = 51;
+                            NetworkSystemRaiseEvent.RaiseEvent(code, new object[] { serverLink }, options, reliable: true);
+                        }
+
+                        RPCProtection();
+                        freezeAllDelay = Time.time + 0.1f;
+                    }
+                }
+                else
+                {
+                    if (Time.time > freezeAllNotificationDelay)
+                    {
+                        freezeAllNotificationDelay = Time.time + 0.1f;
+                        NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Please wait for a user to leave.");
+                    }
+                }
+            }
+            else
+            {
+                if (heldTriggerWhilePlayersCorrect)
+                {
+                    if (ZaWarudo_StartCoroutineVariable != null)
+                    {
+                        CoroutineManager.instance.StopCoroutine(ZaWarudo_StartCoroutineVariable);
+                        ZaWarudo_StartCoroutineVariable = null;
+                    }
+
+                    if (ZaWarudo_EndCoroutineVariable != null)
+                    {
+                        CoroutineManager.instance.StopCoroutine(ZaWarudo_EndCoroutineVariable);
+                        ZaWarudo_EndCoroutineVariable = null;
+                    }
+
+                    ZaWarudo_EndCoroutineVariable = CoroutineManager.instance.StartCoroutine(ZaWarudo_StopCoroutine());
+                }
+
+                SerializePatch.OverrideSerialization = null;
+
+                heldTriggerWhilePlayersCorrect = false;
+            }
+        }
+
+        public static IEnumerator ZaWarudo_StartCoroutine()
+        {
+            //Sound.PlayAudio(ZaWarudo_Start);
+            yield return new WaitForSeconds(2.4f);
+
+            float endWhiteFadeTime = Time.time;
+            Vector3 originPoint = GorillaTagger.Instance.bodyCollider.transform.position;
+
+            while (Time.time < endWhiteFadeTime + 0.2f)
+            {
+                float t = (Time.time - endWhiteFadeTime) / 0.2f;
+                Fun.HueShift(Color.Lerp(Color.clear, Color.white, t));
+
+                TeleportPlayer(originPoint + RandomVector3(t * 0.2f));
+
+                yield return null;
+            }
+
+            float purpleFadeTime = Time.time;
+
+            while (Time.time < purpleFadeTime + 2f)
+            {
+                float t = (Time.time - purpleFadeTime) / 2f;
+                Fun.HueShift(Color.Lerp(Color.white, new Color32(120, 47, 196, 100), t));
+
+                TeleportPlayer(originPoint + RandomVector3((1 - t) * 0.2f));
+
+                yield return null;
+            }
+
+            TeleportPlayer(originPoint);
+
+            Fun.HueShift(new Color32(120, 47, 196, 100));
+
+            ZaWarudo_StartCoroutineVariable = null;
+        }
+
+        public static IEnumerator ZaWarudo_StopCoroutine()
+        {
+            //Sound.PlayAudio(ZaWarudo_Stop);
+            yield return new WaitForSeconds(0.5f);
+
+            float purpleFadeTime = Time.time;
+
+            while (Time.time < purpleFadeTime + 1f)
+            {
+                float t = Time.time - purpleFadeTime;
+                Fun.HueShift(Color.Lerp(new Color32(120, 47, 196, 100), new Color32(120, 47, 196, 0), t));
+
+                yield return null;
+            }
+
+            Fun.HueShift(Color.clear);
+
+            ZaWarudo_EndCoroutineVariable = null;
         }
 
         private static float lagDebounce;
