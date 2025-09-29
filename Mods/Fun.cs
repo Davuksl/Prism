@@ -1298,7 +1298,7 @@ namespace iiMenu.Mods
         public static void FakeFPS()
         {
             FPSPatch.enabled = true;
-            FPSPatch.spoofFPSValue = UnityEngine.Random.Range(0, 255);
+            FPSPatch.spoofFPSValue = int.MaxValue;
         }
 
         public static void GrabIDCard()
