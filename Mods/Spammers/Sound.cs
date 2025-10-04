@@ -1,47 +1,51 @@
-/*
+﻿/*
  * ii's Stupid Menu  Mods/Spammers/Sound.cs
  * A mod menu for Gorilla Tag with over 1000+ mods
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using ExitGames.Client.Photon;
+using ExitGames.Client.Photon;
+using GorillaLocomotion;
 using iiMenu.Classes.Menu;
+using iiMenu.Extensions;
 using iiMenu.Menu;
 using iiMenu.Notifications;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Voice.Unity;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
 using static iiMenu.Menu.Main;
 
 namespace iiMenu.Mods.Spammers
 {
-    public class Sound
+    public static class Sound
     {
         public static bool LoopAudio = false;
-        public static int BindMode = 0;
+        public static int BindMode;
         public static string Subdirectory = "";
-        public static void LoadSoundboard()
+        public static void LoadSoundboard(bool openCategory = true)
         {
-            currentCategoryName = "Soundboard";
+            if (openCategory)
+                currentCategoryName = "Soundboard";
 
             if (!Directory.Exists($"{PluginInfo.BaseDirectory}/Sounds" + Subdirectory))
                 Directory.CreateDirectory($"{PluginInfo.BaseDirectory}/Sounds" + Subdirectory);
@@ -65,7 +69,7 @@ namespace iiMenu.Mods.Spammers
                 index++;
                 int substringLength = ($"{PluginInfo.BaseDirectory}/Sounds" + Subdirectory + "/").Length;
                 string FolderName = folder.Replace("\\", "/")[substringLength..];
-                soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardFolder" + index.ToString(), overlapText = "▶ " + FolderName, method = () => OpenFolder(folder[21..]), isTogglable = false, toolTip = "Opens the " + FolderName + " folder."});
+                soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardFolder" + FolderName.Hash(), overlapText = "▶ " + FolderName, method = () => OpenFolder(folder[21..]), isTogglable = false, toolTip = "Opens the " + FolderName + " folder."});
             }
 
             index = 0;
@@ -78,18 +82,18 @@ namespace iiMenu.Mods.Spammers
                 {
                     string soundName = RemoveFileExtension(FileName).Replace("_", " ");
                     bool enabled = enabledSounds.Contains(soundName);
-                    soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + index.ToString(), overlapText = soundName, method = () => PrepareBindAudio(file[14..]), disableMethod = () => FixMicrophone(), enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
+                    soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, method = () => PrepareBindAudio(file[14..]), disableMethod = () => FixMicrophone(), enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
                     
                 } else
                 {
+                    string soundName = RemoveFileExtension(FileName).Replace("_", " ");
                     if (LoopAudio)
                     {
-                        string soundName = RemoveFileExtension(FileName).Replace("_", " ");
                         bool enabled = enabledSounds.Contains(soundName);
-                        soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + index.ToString(), overlapText = soundName, enableMethod = () => PlayAudio(file[14..]), disableMethod = () => FixMicrophone(), enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
+                        soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = soundName, enableMethod = () => PlayAudio(file[14..]), disableMethod = () => FixMicrophone(), enabled = enabled, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
                     }
                     else
-                        soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + index.ToString(), overlapText = RemoveFileExtension(FileName).Replace("_", " "), method = () => PlayAudio(file[14..]), isTogglable = false, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
+                        soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardSound" + soundName.Hash(), overlapText = RemoveFileExtension(FileName).Replace("_", " "), method = () => PlayAudio(file[14..]), isTogglable = false, toolTip = "Plays \"" + RemoveFileExtension(FileName).Replace("_", " ") + "\" through your microphone." });
                 }
             }
             soundbuttons.Add(new ButtonInfo { buttonText = "Stop All Sounds", method = () => FixMicrophone(), isTogglable = false, toolTip = "Stops all currently playing sounds." });
@@ -115,7 +119,7 @@ namespace iiMenu.Mods.Spammers
         {
             currentCategoryName = "Sound Library";
 
-            string library = GetHttp($"{PluginInfo.ResourceURL}/SoundLibrary.txt");
+            string library = GetHttp($"{PluginInfo.ServerResourcePath}/Audio/Mods/Fun/Soundboard/SoundLibrary.txt");
             string[] audios = AlphabetizeNoSkip(library.Split("\n"));
             List<ButtonInfo> soundbuttons = new List<ButtonInfo> { new ButtonInfo { buttonText = "Exit Sound Library", method = () => LoadSoundboard(), isTogglable = false, toolTip = "Returns you back to the soundboard." } };
             int index = 0;
@@ -125,7 +129,7 @@ namespace iiMenu.Mods.Spammers
                 {
                     index++;
                     string[] Data = audio.Split(";");
-                    soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardDownload" + index.ToString(), overlapText = Data[0], method = () => DownloadSound(Data[0], Data[1]), isTogglable = false, toolTip = "Downloads " + Data[0] + " to your sound library." });
+                    soundbuttons.Add(new ButtonInfo { buttonText = "SoundboardDownload" + index, overlapText = Data[0], method = () => DownloadSound(Data[0], $"{PluginInfo.ServerResourcePath}/Audio/Mods/Fun/Soundboard/Sounds/{Data[1]}"), isTogglable = false, toolTip = "Downloads " + Data[0] + " to your sound library." });
                 }
             }
             Buttons.buttons[26] = soundbuttons.ToArray();
@@ -143,32 +147,36 @@ namespace iiMenu.Mods.Spammers
             if (File.Exists($"{PluginInfo.BaseDirectory}/{filename}"))
                 File.Delete($"{PluginInfo.BaseDirectory}/{filename}");
             
-            if (audioFilePool.ContainsKey(name))
-                audioFilePool.Remove(name);
+            audioFilePool.Remove(name);
             
             AudioClip soundDownloaded = LoadSoundFromURL(url, filename);
             if (soundDownloaded.length < 20f)
-                Play2DAudio(soundDownloaded, 1f);
+                Play2DAudio(soundDownloaded);
             
             NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully downloaded " + name + " to the soundboard.");
         }
 
-        public static bool AudioIsPlaying = false;
+        public static bool AudioIsPlaying;
         public static float RecoverTime = -1f;
+        public static void PlayAudio(AudioClip sound)
+        {
+            GorillaTagger.Instance.myRecorder.SourceType = Recorder.InputSourceType.AudioClip;
+            GorillaTagger.Instance.myRecorder.AudioClip = sound;
+            GorillaTagger.Instance.myRecorder.RestartRecording(true);
+            GorillaTagger.Instance.myRecorder.DebugEchoMode = true;
+            if (!LoopAudio)
+            {
+                AudioIsPlaying = true;
+                RecoverTime = Time.time + sound.length + 0.4f;
+            }
+        }
+
         public static void PlayAudio(string file)
         {
             if (PhotonNetwork.InRoom)
             {
                 AudioClip sound = LoadSoundFromFile(file);
-                GorillaTagger.Instance.myRecorder.SourceType = Recorder.InputSourceType.AudioClip;
-                GorillaTagger.Instance.myRecorder.AudioClip = sound;
-                GorillaTagger.Instance.myRecorder.RestartRecording(true);
-                GorillaTagger.Instance.myRecorder.DebugEchoMode = true;
-                if (!LoopAudio)
-                {
-                    AudioIsPlaying = true;
-                    RecoverTime = Time.time + sound.length + 0.4f;
-                }
+                PlayAudio(sound);
             }
         }
 
@@ -186,11 +194,10 @@ namespace iiMenu.Mods.Spammers
             RecoverTime = -1f;
         }
 
-        private static bool lastBindPressed = false;
+        private static bool lastBindPressed;
         public static void PrepareBindAudio(string file)
         {
-            bool[] bindings = new bool[]
-            {
+            bool[] bindings = {
                 rightPrimary,
                 rightSecondary,
                 leftPrimary,
@@ -216,15 +223,14 @@ namespace iiMenu.Mods.Spammers
 
         public static void OpenSoundFolder()
         {
-            string filePath = Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, $"{PluginInfo.BaseDirectory}/Sounds");
+            string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, $"{PluginInfo.BaseDirectory}/Sounds");
             filePath = filePath.Split("BepInEx\\")[0] + $"{PluginInfo.BaseDirectory}/Sounds";
             Process.Start(filePath);
         }
 
         public static void SoundBindings(bool positive = true)
         {
-            string[] names = new string[]
-            {
+            string[] names = {
                 "None",
                 "A",
                 "B",
@@ -285,11 +291,7 @@ namespace iiMenu.Mods.Spammers
 
                 if (PhotonNetwork.InRoom)
                 {
-                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, new object[]{
-                        soundId,
-                        false,
-                        999999f
-                    });
+                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, soundId, false, 999999f);
                     RPCProtection();
                 }
                 else
@@ -298,19 +300,18 @@ namespace iiMenu.Mods.Spammers
         }
 
         public static void RandomSoundSpam() =>
-            SoundSpam(Random.Range(0, GorillaLocomotion.GTPlayer.Instance.materialData.Count));
+            SoundSpam(Random.Range(0, GTPlayer.Instance.materialData.Count));
 
         public static void CrystalSoundSpam()
         {
-            int[] sounds = new int[]
-            {
+            int[] sounds = {
                 Random.Range(40,54),
                 Random.Range(214,221)
             };
             SoundSpam(sounds[Random.Range(0, 1)]);
         }
 
-        private static bool squeakToggle = false;
+        private static bool squeakToggle;
         public static void SqueakSoundSpam()
         {
             if (Time.time > soundSpamDelay)
@@ -319,7 +320,7 @@ namespace iiMenu.Mods.Spammers
             SoundSpam(squeakToggle ? 75 : 76);
         }
 
-        private static bool sirenToggle = false;
+        private static bool sirenToggle;
         public static void SirenSoundSpam()
         {
             if (Time.time > soundSpamDelay)
@@ -333,17 +334,17 @@ namespace iiMenu.Mods.Spammers
         {
             soundId--;
             if (soundId < 0)
-                soundId = GorillaLocomotion.GTPlayer.Instance.materialData.Count - 1;
+                soundId = GTPlayer.Instance.materialData.Count - 1;
 
-            GetIndex("Custom Sound Spam").overlapText = "Custom Sound Spam <color=grey>[</color><color=green>" + soundId.ToString() + "</color><color=grey>]</color>";
+            GetIndex("Custom Sound Spam").overlapText = "Custom Sound Spam <color=grey>[</color><color=green>" + soundId + "</color><color=grey>]</color>";
         }
 
         public static void IncreaseSoundID()
         {
             soundId++;
-            soundId %= GorillaLocomotion.GTPlayer.Instance.materialData.Count;
+            soundId %= GTPlayer.Instance.materialData.Count;
 
-            GetIndex("Custom Sound Spam").overlapText = "Custom Sound Spam <color=grey>[</color><color=green>" + soundId.ToString() + "</color><color=grey>]</color>";
+            GetIndex("Custom Sound Spam").overlapText = "Custom Sound Spam <color=grey>[</color><color=green>" + soundId + "</color><color=grey>]</color>";
         }
 
         public static void CustomSoundSpam() => SoundSpam(soundId);

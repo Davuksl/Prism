@@ -4,17 +4,17 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -26,32 +26,35 @@ using iiMenu.Classes.Menu;
 using iiMenu.Managers;
 using iiMenu.Notifications;
 using iiMenu.Patches.Menu;
+using iiMenu.Patches.Safety;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Voice.Unity;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using static iiMenu.Managers.RigManager;
 using static iiMenu.Menu.Main;
+using Random = UnityEngine.Random;
 
 namespace iiMenu.Mods
 {
-    public class Safety
+    public static class Safety
     {
         public static void GeneralSafety()
         {
             if (!GetIndex("Anti Report <color=grey>[</color><color=green>Disconnect</color><color=grey>]</color>").enabled) AntiReportDisconnect();
             if (!GetIndex("Anti Report <color=grey>[</color><color=green>Oculus</color><color=grey>]</color>").enabled) AntiOculusReport = true;
-            if (!GetIndex("Anti Report <color=grey>[</color><color=green>Anti Cheat</color><color=grey>]</color>").enabled) Patches.Safety.AntiCheat.AntiACReport = true;
+            if (!GetIndex("Anti Report <color=grey>[</color><color=green>Anti Cheat</color><color=grey>]</color>").enabled) AntiCheat.AntiACReport = true;
             if (!GetIndex("Anti Moderator").enabled) AntiModerator();
         }
 
         public static void DisableGeneral()
         {
             if (!GetIndex("Anti Report <color=grey>[</color><color=green>Oculus</color><color=grey>]</color>").enabled) AntiOculusReport = false;
-            if (!GetIndex("Anti Report <color=grey>[</color><color=green>Anti Cheat</color><color=grey>]</color>").enabled) Patches.Safety.AntiCheat.AntiACReport = false;
+            if (!GetIndex("Anti Report <color=grey>[</color><color=green>Anti Cheat</color><color=grey>]</color>").enabled) AntiCheat.AntiACReport = false;
         }
 
         public static void NoFinger()
@@ -145,13 +148,13 @@ namespace iiMenu.Mods
         public static void SpoofSupportPage() =>
             GorillaComputer.instance.screenText.Text = GorillaComputer.instance.screenText.Text.Replace("STEAM", "QUEST").Replace(GorillaComputer.instance.buildDate, "05/30/2024 16:50:12\nBUILD CODE 4893\nMANAGED ACCOUNT: NO");
 
-        private static float lastCacheClearedTime = 0f;
+        private static float lastCacheClearedTime;
         public static void AutoClearCache()
         {
             if (Time.time > lastCacheClearedTime)
             {
                 lastCacheClearedTime = Time.time + 60f;
-                System.GC.Collect();
+                GC.Collect();
             }
         }
 
@@ -160,14 +163,12 @@ namespace iiMenu.Mods
 
         public static void ChangeAntiReportRange(bool positive = true)
         {
-            string[] names = new string[]
-            {
+            string[] names = {
                 "Default", // The report button
                 "Large", // The report button within the range of 3 people
                 "Massive" // The entire fucking board
             };
-            float[] distances = new float[]
-            {
+            float[] distances = {
                 0.35f,
                 0.7f,
                 1.5f
@@ -197,44 +198,23 @@ namespace iiMenu.Mods
         {
             try
             {
-                foreach (GorillaPlayerScoreboardLine line in GorillaScoreboardTotalUpdater.allScoreboardLines)
-                {
-                    if (line.linePlayer == NetworkSystem.Instance.LocalPlayer)
-                    {
-                        Transform report = line.reportButton.gameObject.transform;
-                        VisualizeAura(report.position, threshold, Color.red);
-                    }
-                }
+                foreach (var report in from line in GorillaScoreboardTotalUpdater.allScoreboardLines where line.linePlayer == NetworkSystem.Instance.LocalPlayer select line.reportButton.gameObject.transform)
+                    VisualizeAura(report.position, threshold, Color.red);
             }
             catch { } // Not connected
         }
 
-        public static void AntiReport(System.Action<VRRig, Vector3> onReport)
+        public static void AntiReport(Action<VRRig, Vector3> onReport)
         {
-            if (NetworkSystem.Instance.InRoom)
+            if (!NetworkSystem.Instance.InRoom) return;
+            
+            foreach (GorillaPlayerScoreboardLine line in GorillaScoreboardTotalUpdater.allScoreboardLines)
             {
-                foreach (GorillaPlayerScoreboardLine line in GorillaScoreboardTotalUpdater.allScoreboardLines)
-                {
-                    if (line.linePlayer == NetworkSystem.Instance.LocalPlayer)
-                    {
-                        Transform report = line.reportButton.gameObject.transform;
+                if (line.linePlayer != NetworkSystem.Instance.LocalPlayer) continue;
+                Transform report = line.reportButton.gameObject.transform;
 
-                        foreach (VRRig vrrig in GorillaParent.instance.vrrigs)
-                        {
-                            if (!vrrig.isLocal)
-                            {
-                                float D1 = Vector3.Distance(vrrig.rightHandTransform.position, report.position);
-                                float D2 = Vector3.Distance(vrrig.leftHandTransform.position, report.position);
-
-                                if (D1 < threshold || D2 < threshold)
-                                {
-                                    if (!smartarp || SmartAntiReport(line.linePlayer))
-                                        onReport?.Invoke(vrrig, report.transform.position);
-                                }
-                            }
-                        }
-                    }
-                }
+                foreach (var vrrig in from vrrig in GorillaParent.instance.vrrigs where !vrrig.isLocal let D1 = Vector3.Distance(vrrig.rightHandTransform.position, report.position) let D2 = Vector3.Distance(vrrig.leftHandTransform.position, report.position) where D1 < threshold || D2 < threshold where !smartarp || SmartAntiReport(line.linePlayer) select vrrig)
+                    onReport?.Invoke(vrrig, report.transform.position);
             }
         }
 
@@ -246,11 +226,9 @@ namespace iiMenu.Mods
                 NetworkSystem.Instance.ReturnToSinglePlayer();
                 RPCProtection();
 
-                if (Time.time > antiReportDelay)
-                {
-                    antiReportDelay = Time.time + 1f;
-                    NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected.");
-                }
+                if (!(Time.time > antiReportDelay)) return;
+                antiReportDelay = Time.time + 1f;
+                NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected.");
             });
         }
 
@@ -258,14 +236,12 @@ namespace iiMenu.Mods
         {
             AntiReport((vrrig, position) =>
             {
-                if (Time.time > antiReportDelay)
-                {
-                    Important.Reconnect();
-                    RPCProtection();
+                if (!(Time.time > antiReportDelay)) return;
+                Important.Reconnect();
+                RPCProtection();
 
-                    antiReportDelay = Time.time + 1f;
-                    NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected and will be reconnected shortly.");
-                }
+                antiReportDelay = Time.time + 1f;
+                NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected and will be reconnected shortly.");
             });
         }
 
@@ -273,63 +249,59 @@ namespace iiMenu.Mods
         {
             AntiReport((vrrig, position) =>
             {
-                if (Time.time > antiReportDelay)
-                {
-                    Important.JoinRandom();
-                    RPCProtection();
+                if (!(Time.time > antiReportDelay)) return;
+                
+                Important.JoinRandom();
+                RPCProtection();
 
-                    antiReportDelay = Time.time + 1f;
-                    NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected and will be reconnected shortly.");
-                }
+                antiReportDelay = Time.time + 1f;
+                NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> " + GetPlayerFromVRRig(vrrig).NickName + " attempted to report you, you have been disconnected and will be reconnected shortly.");
             });
         }
 
         public static float antiReportNotifyDelay;
         public static void AntiReportNotify()
         {
-            if (Time.time > antiReportNotifyDelay)
+            if (!(Time.time > antiReportNotifyDelay)) return;
+            
+            string notifyText = "";
+            AntiReport((vrrig, position) =>
             {
-                string notifyText = "";
-                AntiReport((vrrig, position) =>
+                antiReportNotifyDelay = Time.time + 0.1f;
+
+                if (notifyText == "")
+                    notifyText = GetPlayerFromVRRig(vrrig).NickName;
+                else
                 {
-                    antiReportNotifyDelay = Time.time + 0.1f;
-
-                    if (notifyText == "")
-                        notifyText = GetPlayerFromVRRig(vrrig).NickName;
+                    if (notifyText.Contains("&"))
+                        notifyText = GetPlayerFromVRRig(vrrig).NickName + ", " + notifyText;
                     else
-                    {
-                        if (notifyText.Contains("&"))
-                            notifyText = GetPlayerFromVRRig(vrrig).NickName + ", " + notifyText;
-                        else
-                            notifyText += " & " + GetPlayerFromVRRig(vrrig).NickName;
-                    }
-                });
+                        notifyText += " & " + GetPlayerFromVRRig(vrrig).NickName;
+                }
+            });
 
-                if (notifyText != "")
-                    NotifiLib.SendNotification($"<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> {notifyText} {((notifyText.Contains("&") || notifyText.Contains(",")) ? "are" : "is")} reporting you.");
-            }
+            if (notifyText != "")
+                NotifiLib.SendNotification($"<color=grey>[</color><color=purple>ANTI-REPORT</color><color=grey>]</color> {notifyText} {(notifyText.Contains("&") || notifyText.Contains(",") ? "are" : "is")} reporting you.");
         }
 
         public static void AntiReportOverlay()
         {
-            if (Time.time > antiReportNotifyDelay)
+            if (!(Time.time > antiReportNotifyDelay)) return;
+            string notifyText = null;
+            AntiReport((vrrig, position) =>
             {
-                string notifyText = null;
-                AntiReport((vrrig, position) =>
+                if (notifyText == null)
+                    notifyText = GetPlayerFromVRRig(vrrig).NickName;
+                else
                 {
-                    if (notifyText == null)
-                        notifyText = GetPlayerFromVRRig(vrrig).NickName;
+                    if (notifyText.Contains("&"))
+                        notifyText = GetPlayerFromVRRig(vrrig).NickName + ", " + notifyText;
                     else
-                    {
-                        if (notifyText.Contains("&"))
-                            notifyText = GetPlayerFromVRRig(vrrig).NickName + ", " + notifyText;
-                        else
-                            notifyText += " & " + GetPlayerFromVRRig(vrrig).NickName;
-                    }
-                });
+                        notifyText += " & " + GetPlayerFromVRRig(vrrig).NickName;
+                }
+            });
 
-                NotifiLib.information["Anti-Report"] = notifyText;
-            }
+            NotifiLib.information["Anti-Report"] = notifyText;
         }
 
         public static void AntiReportFRT(Player subject, bool doNotification = true)
@@ -337,8 +309,7 @@ namespace iiMenu.Mods
             if (!smartarp || (smartarp && PhotonNetwork.CurrentRoom.IsVisible && !PhotonNetwork.CurrentRoom.CustomProperties.ToString().Contains("MODDED")))
             {
                 int antiReportType = 0;
-                string[] types = new string[]
-                {
+                string[] types = {
                     "Disconnect",
                     "Reconnect",
                     "Join Random",
@@ -387,61 +358,45 @@ namespace iiMenu.Mods
 
         public static void AntiModerator()
         {
-            foreach (VRRig vrrig in GorillaParent.instance.vrrigs)
+            foreach (var vrrig in GorillaParent.instance.vrrigs.Where(vrrig => !vrrig.isOfflineVRRig && vrrig.concatStringOfCosmeticsAllowed.Contains("LBAAK") || vrrig.concatStringOfCosmeticsAllowed.Contains("LBAAD") || vrrig.concatStringOfCosmeticsAllowed.Contains("LMAPY.")))
             {
-                if (!vrrig.isOfflineVRRig && vrrig.concatStringOfCosmeticsAllowed.Contains("LBAAK") || vrrig.concatStringOfCosmeticsAllowed.Contains("LBAAD") || vrrig.concatStringOfCosmeticsAllowed.Contains("LMAPY."))
+                try
                 {
-                    try
+
+                    VRRig plr = vrrig;
+                    NetPlayer player = GetPlayerFromVRRig(plr);
+                    if (player != null)
                     {
-
-                        VRRig plr = vrrig;
-                        NetPlayer player = GetPlayerFromVRRig(plr);
-                        if (player != null)
+                        string text = "Room: " + PhotonNetwork.CurrentRoom.Name;
+                        float r = 0f;
+                        float g = 0f;
+                        float b = 0f;
+                        try
                         {
-                            string text = "Room: " + PhotonNetwork.CurrentRoom.Name;
-                            float r = 0f;
-                            float g = 0f;
-                            float b = 0f;
-                            try
-                            {
                                 
-                                r = plr.playerColor.r * 255;
-                                g = plr.playerColor.r * 255;
-                                b = plr.playerColor.r * 255;
-                            }
-                            catch { LogManager.Log("Failed to log colors, rig most likely nonexistent"); }
-
-                            try
-                            {
-                                text += "\n====================================\n";
-                                text += string.Concat(new string[]
-                                {
-                                    "Player Name: \"",
-                                    player.NickName,
-                                    "\", Player ID: \"",
-                                    player.UserId,
-                                    "\", Player Color: (R: ",
-                                    r.ToString(),
-                                    ", G: ",
-                                    g.ToString(),
-                                    ", B: ",
-                                    b.ToString(),
-                                    ")"
-                                });
-                            }
-                            catch { LogManager.Log("Failed to log player"); }
-
-                            text += "\n====================================\n";
-                            text += "Text file generated with ii's Stupid Menu";
-                            string fileName = $"{PluginInfo.BaseDirectory}/" + player.NickName + " - Anti Moderator.txt";
-
-                            File.WriteAllText(fileName, text);
+                            r = plr.playerColor.r * 255;
+                            g = plr.playerColor.r * 255;
+                            b = plr.playerColor.r * 255;
                         }
+                        catch { LogManager.Log("Failed to log colors, rig most likely nonexistent"); }
+
+                        try
+                        {
+                            text += "\n====================================\n";
+                            text += string.Concat("Player Name: \"", player.NickName, "\", Player ID: \"", player.UserId, "\", Player Color: (R: ", r.ToString(), ", G: ", g.ToString(), ", B: ", b.ToString(), ")");
+                        }
+                        catch { LogManager.Log("Failed to log player"); }
+
+                        text += "\n====================================\n";
+                        text += "Text file generated with ii's Stupid Menu";
+                        string fileName = $"{PluginInfo.BaseDirectory}/" + player.NickName + " - Anti Moderator.txt";
+
+                        File.WriteAllText(fileName, text);
                     }
-                    catch { }
-                    NetworkSystem.Instance.ReturnToSinglePlayer();
-                    NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-MODERATOR</color><color=grey>]</color> There was a moderator in your lobby, you have been disconnected. Their Player ID and Room Code have been saved to a file.");
                 }
+                catch { }
+                NetworkSystem.Instance.ReturnToSinglePlayer();
+                NotifiLib.SendNotification("<color=grey>[</color><color=purple>ANTI-MODERATOR</color><color=grey>]</color> There was a moderator in your lobby, you have been disconnected. Their Player ID and Room Code have been saved to a file.");
             }
         }
 
@@ -504,14 +459,8 @@ namespace iiMenu.Mods
 
             Hashtable toRemove = new Hashtable();
 
-            foreach (var keyObj in player.CustomProperties.Keys.Cast<object>().ToList())
-            {
-                string key = keyObj?.ToString();
-                if (key == null) continue;
-
-                if (!key.Equals("didTutorial"))
-                    toRemove[key] = null;
-            }
+            foreach (var key in from keyObj in player.CustomProperties.Keys.ToList() select keyObj?.ToString() into key where key != null where !key.Equals("didTutorial") select key)
+                toRemove[key] = null;
 
             if (toRemove.Count > 0)
                 player.SetCustomProperties(toRemove);
@@ -538,8 +487,7 @@ namespace iiMenu.Mods
             string fName = prefix + names[Random.Range(0, names.Length - 1)] + suffix;
             ChangeName(fName.Length > 12 ? fName[..12] : fName);
 
-            Color[] colors = new Color[]
-            {
+            Color[] colors = {
                 Color.cyan,
                 Color.yellow,
                 Color.blue,
@@ -560,7 +508,7 @@ namespace iiMenu.Mods
             ChangeColor(colors[Random.Range(0, colors.Length - 1)]);
         }
 
-        private static bool lastinlobbyagain = false;
+        private static bool lastinlobbyagain;
         public static void ChangeIdentityOnDisconnect()
         {
             if (!PhotonNetwork.InRoom && lastinlobbyagain)
@@ -583,7 +531,7 @@ namespace iiMenu.Mods
             lastinlobbyagain = PhotonNetwork.InRoom;
         }
 
-        private static List<VRRig> spoofedRigs = new List<VRRig>();
+        private static readonly List<VRRig> spoofedRigs = new List<VRRig>();
         public static void NameSpoof()
         {
             List<VRRig> toRemove = new List<VRRig>();
@@ -609,7 +557,7 @@ namespace iiMenu.Mods
                     string fName = prefix + names[Random.Range(0, names.Length - 1)] + suffix;
                     ChangeName(fName.Length > 12 ? fName[..12] : fName, true);
 
-                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", GetPlayerFromVRRig(rig), new object[] { Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f) });
+                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", GetPlayerFromVRRig(rig), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
                 }
             }
 
@@ -635,7 +583,7 @@ namespace iiMenu.Mods
             {
                 if (rig.isLocal) continue;
                 if (!spoofedRigs.Contains(rig))
-                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", GetPlayerFromVRRig(rig), new object[] { Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f) });
+                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", GetPlayerFromVRRig(rig), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
             }
         }
 
@@ -658,19 +606,16 @@ namespace iiMenu.Mods
             if (fpsSpoofValue < 5)
                 fpsSpoofValue = 140;
 
-            GetIndex("Change FPS Spoof Value").overlapText = "Change FPS Spoof Value <color=grey>[</color><color=green>" + fpsSpoofValue.ToString() + "</color><color=grey>]</color>";
+            GetIndex("Change FPS Spoof Value").overlapText = "Change FPS Spoof Value <color=grey>[</color><color=green>" + fpsSpoofValue + "</color><color=grey>]</color>";
         }
 
-        public static string[] namePrefix = new string[]
-        {
+        public static readonly string[] namePrefix = {
             "EPIC", "EPIK", "REAL", "NOT", "SILLY", "LITTLE", "BIG", "MAYBE", "MONKE", "SUB2", "OG"
         };
-        public static string[] nameSuffix = new string[]
-        {
+        public static readonly string[] nameSuffix = {
             "GT", "VR", "LOL", "GTVR", "FAN", "XD", "LOL", "MONK", "YT"
         };
-        public static string[] names = new string[]
-        {
+        public static readonly string[] names = {
             "0", "SHIBA", "PBBV", "J3VU", "BEES", "NAMO", "MANGO", "FROSTY", "FRISH", "LEMMING", 
             "BILLY", "TIMMY", "MINIGAMES", "JMANCURLY", "VMT", "ELLIOT", "POLAR", "3CLIPCE", "DAISY09",
             "SHARKPUPPET", "DUCKY", "EDDIE", "EDDY", "RAKZZ", "CASEOH", "SKETCH", "SKY", "RETURN",
@@ -717,8 +662,7 @@ namespace iiMenu.Mods
 
         public static void ChangeBadgeTier(bool positive = true)
         {
-            string[] badgeNames = new string[]
-            {
+            string[] badgeNames = {
                 "Wood",
                 "Rock",
                 "Bronze",
@@ -758,7 +702,7 @@ namespace iiMenu.Mods
         public static void SpoofBadge()
         {
             SetRankedPatch.enabled = true;
-            if (VRRig.LocalRig.currentRankedELO != targetElo || VRRig.LocalRig.currentRankedSubTierQuest != targetBadge || VRRig.LocalRig.currentRankedSubTierPC != targetBadge)
+            if (!Mathf.Approximately(VRRig.LocalRig.currentRankedELO, targetElo) || VRRig.LocalRig.currentRankedSubTierQuest != targetBadge || VRRig.LocalRig.currentRankedSubTierPC != targetBadge)
                 VRRig.LocalRig.SetRankedInfo(targetElo, targetBadge, targetBadge);
         }
     }

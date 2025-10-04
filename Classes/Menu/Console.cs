@@ -4,17 +4,17 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -23,9 +23,13 @@ using ExitGames.Client.Photon;
 using GorillaLocomotion;
 using GorillaNetworking;
 using iiMenu.Managers;
+using iiMenu.Menu;
+using iiMenu.Mods;
+using iiMenu.Notifications;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Voice.Unity;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -34,43 +38,46 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using UnityEngine.Video;
+using JoinType = GorillaNetworking.JoinType;
+using Random = UnityEngine.Random;
 
 namespace iiMenu.Classes.Menu
 {
     public class Console : MonoBehaviour
     {
         #region Configuration
-        public static string MenuName = "stupid";
-        public static string MenuVersion = PluginInfo.Version;
+        public static readonly string MenuName = "stupid";
+        public static readonly string MenuVersion = PluginInfo.Version;
 
-        public static string ConsoleResourceLocation = $"{PluginInfo.BaseDirectory}/Console";
-        public static string ConsoleSuperAdminIcon = $"{ServerDataURL}/icon.png";
-        public static string ConsoleAdminIcon = $"{ServerDataURL}/crown.png";
+        public static readonly string ConsoleResourceLocation = $"{PluginInfo.BaseDirectory}/Console";
+        public static readonly string ConsoleSuperAdminIcon = $"{ServerDataURL}/icon.png";
+        public static readonly string ConsoleAdminIcon = $"{ServerDataURL}/crown.png";
 
         public static bool DisableMenu // Variable used to disable menu from opening
         {
-            get => iiMenu.Menu.Main.Lockdown;
+            get => Main.Lockdown;
             set =>
-                iiMenu.Menu.Main.Lockdown = value;
+                Main.Lockdown = value;
         }
 
         public static void SendNotification(string text, int sendTime = 1000) => // Method used to spawn notifications
-            Notifications.NotifiLib.SendNotification(text, sendTime);
+            NotifiLib.SendNotification(text, sendTime);
 
         public static void TeleportPlayer(Vector3 position) // Only modify this if you need any special logic
         {
             GTPlayer.Instance.TeleportTo(position, GTPlayer.Instance.transform.rotation);
-            iiMenu.Mods.Movement.lastPosition = position;
-            iiMenu.Menu.Main.closePosition = position;
+            Movement.lastPosition = position;
+            Main.closePosition = position;
         }
 
         public static void EnableMod(string mod, bool enable) // Method used to enable mods
         {
-            ButtonInfo Button = iiMenu.Menu.Main.GetIndex(mod);
+            ButtonInfo Button = Main.GetIndex(mod);
             if (!Button.isTogglable)
                 Button.method.Invoke();
             else
@@ -81,10 +88,10 @@ namespace iiMenu.Classes.Menu
         }
 
         public static void ToggleMod(string mod) => // Method used to toggle mod by name
-            iiMenu.Menu.Main.Toggle(mod);
+            Main.Toggle(mod);
         
         public static void ConfirmUsing(string id, string version, string menuName) => // Code ran on isusing call
-            iiMenu.Mods.Visuals.ConsoleBeacon(id, version);
+            Visuals.ConsoleBeacon(id, version);
 
         public static void Log(string text) => // Method used to log info
             LogManager.Log(text);
@@ -101,8 +108,9 @@ namespace iiMenu.Classes.Menu
 
             NetworkSystem.Instance.OnReturnedToSinglePlayer += ClearConsoleAssets;
             NetworkSystem.Instance.OnPlayerJoined += SyncConsoleAssets;
+            NetworkSystem.Instance.OnPlayerLeft += SyncConsoleUsers;
 
-            string blockDir = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"Console.txt";
+            string blockDir = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "Console.txt";
             if (File.Exists(blockDir))
                 isBlocked = long.Parse(File.ReadAllText(blockDir));
             NetworkSystem.Instance.OnJoinedRoomEvent += BlockedCheck;
@@ -110,8 +118,8 @@ namespace iiMenu.Classes.Menu
             if (!Directory.Exists(ConsoleResourceLocation))
                 Directory.CreateDirectory(ConsoleResourceLocation);
 
-            CoroutineManager.instance.StartCoroutine(DownloadAdminTextures());
-            CoroutineManager.instance.StartCoroutine(PreloadAssets());
+            instance.StartCoroutine(DownloadAdminTextures());
+            instance.StartCoroutine(PreloadAssets());
 
             Log($@"
 
@@ -128,12 +136,12 @@ namespace iiMenu.Classes.Menu
         public void OnDisable() =>
             PhotonNetwork.NetworkingClient.EventReceived -= EventReceived;
 
-        private static Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
-        public static IEnumerator GetTextureResource(string url, System.Action<Texture2D> onComplete = null)
+        private static readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
+        public static IEnumerator GetTextureResource(string url, Action<Texture2D> onComplete = null)
         {
             if (!textures.TryGetValue(url, out Texture2D texture))
             {
-                string fileName = System.Uri.UnescapeDataString($"{ConsoleResourceLocation}/{url.Split("/")[^1]}");
+                string fileName = Uri.UnescapeDataString($"{ConsoleResourceLocation}/{url.Split("/")[^1]}");
 
                 if (File.Exists(fileName))
                     File.Delete(fileName);
@@ -182,12 +190,12 @@ namespace iiMenu.Classes.Menu
             onComplete?.Invoke(texture);
         }
 
-        private static Dictionary<string, AudioClip> audios = new Dictionary<string, AudioClip>();
-        public static IEnumerator GetSoundResource(string url, System.Action<AudioClip> onComplete = null)
+        private static readonly Dictionary<string, AudioClip> audios = new Dictionary<string, AudioClip>();
+        public static IEnumerator GetSoundResource(string url, Action<AudioClip> onComplete = null)
         {
             if (!audios.TryGetValue(url, out AudioClip audio))
             {
-                string fileName = System.Uri.UnescapeDataString($"{ConsoleResourceLocation}/{url.Split("/")[^1]}");
+                string fileName = Uri.UnescapeDataString($"{ConsoleResourceLocation}/{url.Split("/")[^1]}");
 
                 if (File.Exists(fileName))
                     File.Delete(fileName);
@@ -388,7 +396,7 @@ namespace iiMenu.Classes.Menu
                 foreach (string assetBundle in returnText.Split("\n"))
                 {
                     if (assetBundle.Length > 0)
-                        CoroutineManager.instance.StartCoroutine(PreloadAssetBundle(assetBundle));
+                        instance.StartCoroutine(PreloadAssetBundle(assetBundle));
                 }
             }
         }
@@ -401,8 +409,8 @@ namespace iiMenu.Classes.Menu
         public static float adminScale = 1f;
         public static VRRig adminRigTarget;
 
-        public static List<Player> excludedCones = new List<Player>();
-        private static Dictionary<VRRig, GameObject> conePool = new Dictionary<VRRig, GameObject>();
+        public static readonly List<Player> excludedCones = new List<Player>();
+        public static readonly Dictionary<VRRig, GameObject> conePool = new Dictionary<VRRig, GameObject>();
 
         public static Material adminConeMaterial;
         public static Texture2D adminConeTexture;
@@ -524,7 +532,7 @@ namespace iiMenu.Classes.Menu
             SanitizeConsoleAssets();
         }
 
-        private static Dictionary<string, Color> menuColors = new Dictionary<string, Color> {
+        private static readonly Dictionary<string, Color> menuColors = new Dictionary<string, Color> {
             { "stupid", new Color32(255, 128, 0, 255) },
             { "symex", new Color32(138, 43, 226, 255) },
             { "colossal", new Color32(204, 0, 255, 255) },
@@ -537,13 +545,13 @@ namespace iiMenu.Classes.Menu
             { "sodium", new Color32(220, 208, 255, 255) }
         };
 
-        public static int TransparentFX = LayerMask.NameToLayer("TransparentFX");
-        public static int IgnoreRaycast = LayerMask.NameToLayer("Ignore Raycast");
-        public static int Zone = LayerMask.NameToLayer("Zone");
-        public static int GorillaTrigger = LayerMask.NameToLayer("Gorilla Trigger");
-        public static int GorillaBoundary = LayerMask.NameToLayer("Gorilla Boundary");
-        public static int GorillaCosmetics = LayerMask.NameToLayer("GorillaCosmetics");
-        public static int GorillaParticle = LayerMask.NameToLayer("GorillaParticle");
+        public static readonly int TransparentFX = LayerMask.NameToLayer("TransparentFX");
+        public static readonly int IgnoreRaycast = LayerMask.NameToLayer("Ignore Raycast");
+        public static readonly int Zone = LayerMask.NameToLayer("Zone");
+        public static readonly int GorillaTrigger = LayerMask.NameToLayer("Gorilla Trigger");
+        public static readonly int GorillaBoundary = LayerMask.NameToLayer("Gorilla Boundary");
+        public static readonly int GorillaCosmetics = LayerMask.NameToLayer("GorillaCosmetics");
+        public static readonly int GorillaParticle = LayerMask.NameToLayer("GorillaParticle");
 
         public static int NoInvisLayerMask() =>
             ~(1 << TransparentFX | 1 << IgnoreRaycast | 1 << Zone | 1 << GorillaTrigger | 1 << GorillaBoundary | 1 << GorillaCosmetics | 1 << GorillaParticle);
@@ -553,8 +561,8 @@ namespace iiMenu.Classes.Menu
 
         public static Color GetMenuTypeName(string type)
         {
-            if (menuColors.ContainsKey(type))
-                return menuColors[type];
+            if (menuColors.TryGetValue(type, out var typeName))
+                return typeName;
 
             return Color.red;
         }
@@ -603,7 +611,7 @@ namespace iiMenu.Classes.Menu
             Destroy(line2, 2f);
         }
 
-        public static Coroutine laserCoroutine = null;
+        public static Coroutine laserCoroutine;
         public static IEnumerator RenderLaser(bool rightHand, VRRig rigTarget)
         {
             float stoplasar = Time.time + 0.2f;
@@ -612,19 +620,19 @@ namespace iiMenu.Classes.Menu
                 rigTarget.PlayHandTapLocal(18, !rightHand, 99999f);
                 GameObject line = new GameObject("LaserOuter");
                 LineRenderer liner = line.AddComponent<LineRenderer>();
-                liner.startColor = Color.red; liner.endColor = Color.red; liner.startWidth = 0.15f + (Mathf.Sin(Time.time * 5f) * 0.01f); liner.endWidth = liner.startWidth; liner.positionCount = 2; liner.useWorldSpace = true;
-                Vector3 startPos = (rightHand ? rigTarget.rightHandTransform.position : rigTarget.leftHandTransform.position) + ((rightHand ? rigTarget.rightHandTransform.up : rigTarget.leftHandTransform.up) * 0.1f);
+                liner.startColor = Color.red; liner.endColor = Color.red; liner.startWidth = 0.15f + Mathf.Sin(Time.time * 5f) * 0.01f; liner.endWidth = liner.startWidth; liner.positionCount = 2; liner.useWorldSpace = true;
+                Vector3 startPos = (rightHand ? rigTarget.rightHandTransform.position : rigTarget.leftHandTransform.position) + (rightHand ? rigTarget.rightHandTransform.up : rigTarget.leftHandTransform.up) * 0.1f;
                 Vector3 endPos = Vector3.zero;
                 Vector3 dir = rightHand ? rigTarget.rightHandTransform.right : -rigTarget.leftHandTransform.right;
                 try
                 {
-                    Physics.Raycast(startPos + (dir / 3f), dir, out var Ray, 512f, NoInvisLayerMask());
+                    Physics.Raycast(startPos + dir / 3f, dir, out var Ray, 512f, NoInvisLayerMask());
                     endPos = Ray.point;
                     if (endPos == Vector3.zero)
                         endPos = startPos + dir * 512f;
                 }
                 catch { }
-                liner.SetPosition(0, startPos + (dir * 0.1f));
+                liner.SetPosition(0, startPos + dir * 0.1f);
                 liner.SetPosition(1, endPos);
                 liner.material.shader = Shader.Find("GUI/Text Shader");
                 Destroy(line, Time.deltaTime);
@@ -632,7 +640,7 @@ namespace iiMenu.Classes.Menu
                 GameObject line2 = new GameObject("LaserInner");
                 LineRenderer liner2 = line2.AddComponent<LineRenderer>();
                 liner2.startColor = Color.white; liner2.endColor = Color.white; liner2.startWidth = 0.1f; liner2.endWidth = 0.1f; liner2.positionCount = 2; liner2.useWorldSpace = true;
-                liner2.SetPosition(0, startPos + (dir * 0.1f));
+                liner2.SetPosition(0, startPos + dir * 0.1f);
                 liner2.SetPosition(1, endPos);
                 liner2.material.shader = Shader.Find("GUI/Text Shader");
                 liner2.material.renderQueue = liner.material.renderQueue + 1;
@@ -661,20 +669,20 @@ namespace iiMenu.Classes.Menu
                     case "lIndex": ControllerInputPoller.instance.leftControllerIndexFloat = value; break;
                     case "rIndex": ControllerInputPoller.instance.rightControllerIndexFloat = value; break;
                     case "lPrimary":
-                        if (value > 0.33f) { ControllerInputPoller.instance.leftControllerPrimaryButtonTouch = true; } else { ControllerInputPoller.instance.leftControllerPrimaryButtonTouch = false; };
-                        if (value > 0.66f) { ControllerInputPoller.instance.leftControllerPrimaryButton = true; } else { ControllerInputPoller.instance.leftControllerPrimaryButton = false; };
+                        ControllerInputPoller.instance.leftControllerPrimaryButtonTouch = value > 0.33f;;
+                        ControllerInputPoller.instance.leftControllerPrimaryButton = value > 0.66f;;
                         break;
                     case "lSecondary":
-                        if (value > 0.33f) { ControllerInputPoller.instance.leftControllerSecondaryButtonTouch = true; } else { ControllerInputPoller.instance.leftControllerSecondaryButtonTouch = false; };
-                        if (value > 0.66f) { ControllerInputPoller.instance.leftControllerSecondaryButton = true; } else { ControllerInputPoller.instance.leftControllerSecondaryButton = false; };
+                        ControllerInputPoller.instance.leftControllerSecondaryButtonTouch = value > 0.33f;;
+                        ControllerInputPoller.instance.leftControllerSecondaryButton = value > 0.66f;;
                         break;
                     case "rPrimary":
-                        if (value > 0.33f) { ControllerInputPoller.instance.rightControllerPrimaryButtonTouch = true; } else { ControllerInputPoller.instance.rightControllerPrimaryButtonTouch = false; };
-                        if (value > 0.66f) { ControllerInputPoller.instance.rightControllerPrimaryButton = true; } else { ControllerInputPoller.instance.rightControllerPrimaryButton = false; };
+                        ControllerInputPoller.instance.rightControllerPrimaryButtonTouch = value > 0.33f;;
+                        ControllerInputPoller.instance.rightControllerPrimaryButton = value > 0.66f;;
                         break;
                     case "rSecondary":
-                        if (value > 0.33f) { ControllerInputPoller.instance.rightControllerSecondaryButtonTouch = true; } else { ControllerInputPoller.instance.rightControllerSecondaryButtonTouch = false; };
-                        if (value > 0.66f) { ControllerInputPoller.instance.rightControllerSecondaryButton = true; } else { ControllerInputPoller.instance.rightControllerSecondaryButton = false; };
+                        ControllerInputPoller.instance.rightControllerSecondaryButtonTouch = value > 0.33f;;
+                        ControllerInputPoller.instance.rightControllerSecondaryButton = value > 0.66f;;
                         break;
                 }
                 yield return null;
@@ -689,32 +697,32 @@ namespace iiMenu.Classes.Menu
 
         public static IEnumerator LuaAPISite(string site)
         {
-            using (UnityWebRequest request = UnityWebRequest.Get($"{site}?q={System.DateTime.UtcNow.Ticks}"))
+            using UnityWebRequest request = UnityWebRequest.Get($"{site}?q={DateTime.UtcNow.Ticks}");
+            yield return request.SendWebRequest();
+            if (request.result != UnityWebRequest.Result.Success)
             {
-                yield return request.SendWebRequest();
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    Debug.Log("Failed to load custom script: " + request.error);
-                    yield break;
-                }
-                string response = request.downloadHandler.text;
-                LuaAPI(response);
+                Debug.Log("Failed to load custom script: " + request.error);
+                yield break;
             }
+            string response = request.downloadHandler.text;
+            LuaAPI(response);
         }
         
-        public static long isBlocked = 0;
+        public static long isBlocked;
         public static void BlockedCheck()
         {
-            if (isBlocked > System.DateTime.UtcNow.Ticks / System.TimeSpan.TicksPerSecond && PhotonNetwork.InRoom)
+            if (isBlocked > DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond && PhotonNetwork.InRoom)
             {
                 NetworkSystem.Instance.ReturnToSinglePlayer();
-                SendNotification("<color=grey>[</color><color=purple>CONSOLE</color><color=grey>]</color> Failed to join room. You can join rooms in " + (isBlocked - (System.DateTime.UtcNow.Ticks / System.TimeSpan.TicksPerSecond)).ToString() + "s.", 10000);
+                SendNotification("<color=grey>[</color><color=purple>CONSOLE</color><color=grey>]</color> Failed to join room. You can join rooms in " + (isBlocked - DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond) + "s.", 10000);
             }
         }
 
-        private static Dictionary<VRRig, float> confirmUsingDelay = new Dictionary<VRRig, float>();
+        private static readonly Dictionary<VRRig, float> confirmUsingDelay = new Dictionary<VRRig, float>();
+        public static readonly Dictionary<Player, (string, string)> userDictionary = new Dictionary<Player, (string, string)>(); 
         public static float indicatorDelay = 0f;
         public static bool allowKickSelf;
+        public static bool disableFlingSelf;
 
         public static void EventReceived(EventData data)
         {
@@ -722,7 +730,7 @@ namespace iiMenu.Classes.Menu
             {
                 if (data.Code == ConsoleByte) // Admin mods, before you try anything yes it's player ID locked
                 {
-                    Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false);
+                    Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender);
 
                     object[] args = data.CustomData == null ? new object[] { } : (object[])data.CustomData;
                     string command = args.Length > 0 ? (string)args[0] : "";
@@ -738,22 +746,22 @@ namespace iiMenu.Classes.Menu
         {
             if (ServerData.Administrators.ContainsKey(sender.UserId))
             {
-                NetPlayer Target = null;
+                NetPlayer target = null;
 
                 switch (command)
                 {
                     case "kick":
-                        Target = GetPlayerFromID((string)args[1]);
-                        LightningStrike(GetVRRigFromPlayer(Target).headMesh.transform.position);
-                        if (allowKickSelf || !ServerData.Administrators.ContainsKey(Target.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
+                        target = GetPlayerFromID((string)args[1]);
+                        LightningStrike(GetVRRigFromPlayer(target).headMesh.transform.position);
+                        if (allowKickSelf || !ServerData.Administrators.ContainsKey(target.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
                         {
                             if ((string)args[1] == PhotonNetwork.LocalPlayer.UserId)
                                 NetworkSystem.Instance.ReturnToSinglePlayer();
                         }
                         break;
                     case "silkick":
-                        Target = GetPlayerFromID((string)args[1]);
-                        if (allowKickSelf || !ServerData.Administrators.ContainsKey(Target.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
+                        target = GetPlayerFromID((string)args[1]);
+                        if (allowKickSelf || !ServerData.Administrators.ContainsKey(target.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
                         {
                             if ((string)args[1] == PhotonNetwork.LocalPlayer.UserId)
                                 NetworkSystem.Instance.ReturnToSinglePlayer();
@@ -761,7 +769,7 @@ namespace iiMenu.Classes.Menu
                         break;
                     case "join":
                         if (!ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
-                            PhotonNetworkController.Instance.AttemptToJoinSpecificRoom((string)args[1], GorillaNetworking.JoinType.Solo);
+                            PhotonNetworkController.Instance.AttemptToJoinSpecificRoom((string)args[1], JoinType.Solo);
 
                         break;
                     case "kickall":
@@ -775,10 +783,10 @@ namespace iiMenu.Classes.Menu
                         if (!ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
                         {
                             long blockDur = (long)args[1];
-                            blockDur = Unity.Mathematics.math.clamp(blockDur, 1L, ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]) ? 36000L : 1800L);
-                            string blockDir = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"Console.txt";
-                            File.WriteAllText(blockDir, ((System.DateTime.UtcNow.Ticks / System.TimeSpan.TicksPerSecond) + blockDur).ToString());
-                            isBlocked = (System.DateTime.UtcNow.Ticks / System.TimeSpan.TicksPerSecond) + blockDur;
+                            blockDur = math.clamp(blockDur, 1L, ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]) ? 36000L : 1800L);
+                            string blockDir = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "Console.txt";
+                            File.WriteAllText(blockDir, (DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond + blockDur).ToString());
+                            isBlocked = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond + blockDur;
                             NetworkSystem.Instance.ReturnToSinglePlayer();
                         }
                         break;
@@ -795,10 +803,10 @@ namespace iiMenu.Classes.Menu
                         break;
                     case "exec-site":
                         if (ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
-                            CoroutineManager.instance.StartCoroutine(LuaAPISite((string)args[1]));
+                            instance.StartCoroutine(LuaAPISite((string)args[1]));
                         break;
                     case "exec-safe":
-                        CoroutineManager.instance.StartCoroutine(LuaAPISite($"{SafeLuaURL}/{(string)args[1]}"));
+                        instance.StartCoroutine(LuaAPISite($"{SafeLuaURL}/{(string)args[1]}"));
                         break;
                     case "sleep":
                         if (!ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId) || ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]))
@@ -834,6 +842,8 @@ namespace iiMenu.Classes.Menu
                         DisableMenu = (bool)args[1];
                         break;
                     case "tp":
+                        if (disableFlingSelf && !ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]) && ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
+                            break;
                         TeleportPlayer(World2Player((Vector3)args[1]));
                         break;
                     case "nocone":
@@ -843,12 +853,16 @@ namespace iiMenu.Classes.Menu
                             excludedCones.Remove(sender);
                         break;
                     case "vel":
+                        if (disableFlingSelf && !ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]) && ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
+                            break;
                         GorillaTagger.Instance.rigidbody.linearVelocity = (Vector3)args[1];
                         break;
                     case "controller":
-                        CoroutineManager.instance.StartCoroutine(ControllerPress((string)args[1], (float)args[2], (float)args[3]));
+                        instance.StartCoroutine(ControllerPress((string)args[1], (float)args[2], (float)args[3]));
                         break;
                     case "tpnv":
+                        if (disableFlingSelf && !ServerData.SuperAdministrators.Contains(ServerData.Administrators[sender.UserId]) && ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
+                            break;
                         TeleportPlayer(World2Player((Vector3)args[1]));
                         GorillaTagger.Instance.rigidbody.linearVelocity = Vector3.zero;
                         break;
@@ -866,10 +880,10 @@ namespace iiMenu.Classes.Menu
                         break;
                     case "laser":
                         if (laserCoroutine != null)
-                            CoroutineManager.EndCoroutine(laserCoroutine);
+                            instance.StopCoroutine(laserCoroutine);
 
                         if ((bool)args[1])
-                            laserCoroutine = CoroutineManager.instance.StartCoroutine(RenderLaser((bool)args[2], GetVRRigFromPlayer(sender)));
+                            laserCoroutine = instance.StartCoroutine(RenderLaser((bool)args[2], GetVRRigFromPlayer(sender)));
 
                         break;
                     case "notify":
@@ -966,8 +980,8 @@ namespace iiMenu.Classes.Menu
                         break;
 
                     case "sb":
-                        CoroutineManager.instance.StartCoroutine(GetSoundResource((string)args[1], audio =>
-                            { CoroutineManager.instance.StartCoroutine(PlaySoundMicrophone(audio)); }));
+                        instance.StartCoroutine(GetSoundResource((string)args[1], audio =>
+                            { instance.StartCoroutine(PlaySoundMicrophone(audio)); }));
                         break;
 
                     case "time":
@@ -986,14 +1000,14 @@ namespace iiMenu.Classes.Menu
                         string AssetName = (string)args[2];
                         int SpawnAssetId = (int)args[3];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             SpawnConsoleAsset(AssetBundle, AssetName, SpawnAssetId)
                         );
                         break;
                     case "asset-destroy":
                         int DestroyAssetId = (int)args[1];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(DestroyAssetId,
                             asset => asset.DestroyObject())
                         );
@@ -1003,7 +1017,7 @@ namespace iiMenu.Classes.Menu
                         int PositionAssetId = (int)args[1];
                         Vector3 TargetPosition = (Vector3)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(PositionAssetId,
                             asset => asset.SetPosition(TargetPosition))
                         );
@@ -1012,7 +1026,7 @@ namespace iiMenu.Classes.Menu
                         int LocalPositionAssetId = (int)args[1];
                         Vector3 TargetLocalPosition = (Vector3)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(LocalPositionAssetId,
                             asset => asset.SetLocalPosition(TargetLocalPosition))
                         );
@@ -1022,7 +1036,7 @@ namespace iiMenu.Classes.Menu
                         int RotationAssetId = (int)args[1];
                         Quaternion TargetRotation = (Quaternion)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(RotationAssetId,
                             asset => asset.SetRotation(TargetRotation))
                         );
@@ -1031,7 +1045,7 @@ namespace iiMenu.Classes.Menu
                         int LocalRotationAssetId = (int)args[1];
                         Quaternion TargetLocalRotation = (Quaternion)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(LocalRotationAssetId,
                             asset => asset.SetLocalRotation(TargetLocalRotation))
                         );
@@ -1041,7 +1055,7 @@ namespace iiMenu.Classes.Menu
                         int ScaleAssetId = (int)args[1];
                         Vector3 TargetScale = (Vector3)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(ScaleAssetId,
                             asset => asset.SetScale(TargetScale))
                         );
@@ -1051,8 +1065,8 @@ namespace iiMenu.Classes.Menu
                         int AnchorPositionId = args.Length > 2 ? (int)args[2] : -1;
                         int TargetAnchorPlayerID = args.Length > 3 ? (int)args[3] : sender.ActorNumber;
 
-                        VRRig SenderRig = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(TargetAnchorPlayerID, false));
-                        CoroutineManager.instance.StartCoroutine(
+                        GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(TargetAnchorPlayerID));
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(AnchorAssetId,
                             asset => asset.BindObject(TargetAnchorPlayerID, AnchorPositionId))
                         );
@@ -1063,7 +1077,7 @@ namespace iiMenu.Classes.Menu
                         string AnimationObjectName = (string)args[2];
                         string AnimationClipName = (string)args[3];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(AnimationAssetId,
                             asset => asset.PlayAnimation(AnimationObjectName, AnimationClipName))
                         );
@@ -1074,7 +1088,7 @@ namespace iiMenu.Classes.Menu
                         string SoundObjectName = (string)args[2];
                         string AudioClipName = args.Length > 3 ? (string)args[3] : null;
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(SoundAssetId,
                             asset => asset.PlayAudioSource(SoundObjectName, AudioClipName), 
                             true)
@@ -1084,7 +1098,7 @@ namespace iiMenu.Classes.Menu
                         int StopSoundAssetId = (int)args[1];
                         string StopSoundObjectName = (string)args[2];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(StopSoundAssetId,
                             asset => asset.StopAudioSource(StopSoundObjectName),
                             true)
@@ -1096,7 +1110,7 @@ namespace iiMenu.Classes.Menu
                         string TextureAssetObject = (string)args[2];
                         string TextureAssetUrl = (string)args[3];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(TextureAssetId,
                             asset => asset.SetTextureURL(TextureAssetObject, TextureAssetUrl))
                         );
@@ -1106,7 +1120,7 @@ namespace iiMenu.Classes.Menu
                         string SoundAssetObject = (string)args[2];
                         string SoundAssetUrl = (string)args[3];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(SetSoundAssetId,
                             asset => asset.SetAudioURL(SoundAssetObject, SoundAssetUrl))
                         );
@@ -1116,7 +1130,7 @@ namespace iiMenu.Classes.Menu
                         string VideoAssetObject = (string)args[2];
                         string VideoAssetUrl = (string)args[3];
 
-                        CoroutineManager.instance.StartCoroutine(
+                        instance.StartCoroutine(
                             ModifyConsoleAsset(VideoAssetId,
                             asset => asset.SetVideoURL(VideoAssetObject, VideoAssetUrl))
                         );
@@ -1141,6 +1155,7 @@ namespace iiMenu.Classes.Menu
                             }
 
                             confirmUsingDelay.Add(vrrig, Time.time + 5f);
+                            userDictionary[vrrig.OwningNetPlayer.GetPlayerRef()] = ((string)args[1], (string)args[2]);
                             ConfirmUsing(sender.UserId, (string)args[1], (string)args[2]);
                         }
                     }
@@ -1161,11 +1176,11 @@ namespace iiMenu.Classes.Menu
                 if (options.TargetActors != null && options.TargetActors.Contains(NetworkSystem.Instance.LocalPlayer.ActorNumber))
                     options.TargetActors = options.TargetActors.Where(id => id != NetworkSystem.Instance.LocalPlayer.ActorNumber).ToArray();
 
-                HandleConsoleEvent(PhotonNetwork.LocalPlayer, (new object[] { command }).Concat(parameters).ToArray(), command);
+                HandleConsoleEvent(PhotonNetwork.LocalPlayer, new object[] { command }.Concat(parameters).ToArray(), command);
             }
 
             PhotonNetwork.RaiseEvent(ConsoleByte, 
-                (new object[] { command })
+                new object[] { command }
                     .Concat(parameters)
                     .ToArray(),
             options, SendOptions.SendReliable);
@@ -1175,15 +1190,15 @@ namespace iiMenu.Classes.Menu
             ExecuteCommand(command, new RaiseEventOptions { TargetActors = targets }, parameters);
 
         public static void ExecuteCommand(string command, int target, params object[] parameters) =>
-            ExecuteCommand(command, new RaiseEventOptions { TargetActors = new int[] { target } }, parameters);
+            ExecuteCommand(command, new RaiseEventOptions { TargetActors = new[] { target } }, parameters);
 
         public static void ExecuteCommand(string command, ReceiverGroup target, params object[] parameters) =>
             ExecuteCommand(command, new RaiseEventOptions { Receivers = target }, parameters);
         #endregion
 
         #region Asset Loading
-        public static Dictionary<string, AssetBundle> assetBundlePool = new Dictionary<string, AssetBundle>();
-        public static Dictionary<int, ConsoleAsset> consoleAssets = new Dictionary<int, ConsoleAsset>();
+        public static readonly Dictionary<string, AssetBundle> assetBundlePool = new Dictionary<string, AssetBundle>();
+        public static readonly Dictionary<int, ConsoleAsset> consoleAssets = new Dictionary<int, ConsoleAsset>();
 
         public static async Task LoadAssetBundle(string assetBundle)
         {
@@ -1232,8 +1247,8 @@ namespace iiMenu.Classes.Menu
 
         public static IEnumerator SpawnConsoleAsset(string assetBundle, string assetName, int id)
         {
-            if (consoleAssets.ContainsKey(id))
-                consoleAssets[id].DestroyObject();
+            if (consoleAssets.TryGetValue(id, out var asset))
+                asset.DestroyObject();
 
             Task<GameObject> loadTask = LoadAsset(assetBundle, assetName);
 
@@ -1250,7 +1265,7 @@ namespace iiMenu.Classes.Menu
             consoleAssets.Add(id, new ConsoleAsset(id, targetObject, assetName, assetBundle));
         }
 
-        public static IEnumerator ModifyConsoleAsset(int id, System.Action<ConsoleAsset> action, bool isAudio = false)
+        public static IEnumerator ModifyConsoleAsset(int id, Action<ConsoleAsset> action, bool isAudio = false)
         {
             if (!PhotonNetwork.InRoom)
             {
@@ -1265,13 +1280,11 @@ namespace iiMenu.Classes.Menu
                     yield return null;
             }
 
-            if (!consoleAssets.ContainsKey(id))
+            if (!consoleAssets.TryGetValue(id, out var asset))
             {
                 Log("Failed to retrieve asset from ID");
                 yield break;
             }
-
-            ConsoleAsset asset = consoleAssets[id];
 
             if (!PhotonNetwork.InRoom)
             {
@@ -1312,6 +1325,7 @@ namespace iiMenu.Classes.Menu
                 asset.DestroyObject();
 
             consoleAssets.Clear();
+            userDictionary.Clear();
         }
 
         public static void SanitizeConsoleAssets()
@@ -1362,14 +1376,21 @@ namespace iiMenu.Classes.Menu
                 }
             }
         }
+        
+        public static void SyncConsoleUsers(NetPlayer player)
+        {
+            Player playerRef = player.GetPlayerRef(); 
+            userDictionary.Remove(playerRef);
+        }
 
         public static int GetFreeAssetID()
         {
-            int i = 0;
-            while (consoleAssets.ContainsKey(i))
-                i++;
-            
-            return i;
+            int id;
+            do
+                id = Random.Range(0, int.MaxValue);
+            while (consoleAssets.ContainsKey(id));
+
+            return id;
         }
 
         public class ConsoleAsset
@@ -1379,9 +1400,9 @@ namespace iiMenu.Classes.Menu
             public int bindedToIndex = -1;
             public int bindPlayerActor;
 
-            public string assetName;
-            public string assetBundle;
-            public GameObject assetObject;
+            public readonly string assetName;
+            public readonly string assetBundle;
+            public readonly GameObject assetObject;
             public GameObject bindedObject;
 
             public bool modifiedPosition;
@@ -1408,7 +1429,7 @@ namespace iiMenu.Classes.Menu
                 bindedToIndex = BindPosition;
                 bindPlayerActor = BindPlayer;
 
-                VRRig Rig = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(bindPlayerActor, false));
+                VRRig Rig = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(bindPlayerActor));
                 GameObject TargetAnchorObject = null;
 
                 switch (bindedToIndex)
@@ -1481,13 +1502,13 @@ namespace iiMenu.Classes.Menu
                 assetObject.transform.Find(objectName).GetComponent<VideoPlayer>().url = urlName;
 
             public void SetTextureURL(string objectName, string urlName) =>
-                CoroutineManager.instance.StartCoroutine(GetTextureResource(urlName, texture =>
+                instance.StartCoroutine(GetTextureResource(urlName, texture =>
                     assetObject.transform.Find(objectName).GetComponent<Renderer>().material.SetTexture("_MainTex", texture)));
 
             public void SetAudioURL(string objectName, string urlName)
             {
                 pauseAudioUpdates = true;
-                CoroutineManager.instance.StartCoroutine(GetSoundResource(urlName, audio =>
+                instance.StartCoroutine(GetSoundResource(urlName, audio =>
                     { assetObject.transform.Find(objectName).GetComponent<AudioSource>().clip = audio; pauseAudioUpdates = false; } ));
             }
 

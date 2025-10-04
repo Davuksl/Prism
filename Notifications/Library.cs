@@ -4,17 +4,17 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -38,17 +38,17 @@ namespace iiMenu.Notifications
 
     public class NotifiLib : MonoBehaviour
     {
-        public static NotifiLib instance;
+        public static NotifiLib instance { get; private set; }
         public GameObject HUDObj;
         public GameObject HUDObj2;
 
         private GameObject MainCamera;
 
-        private Material AlertText = new Material(Shader.Find("GUI/Text Shader"));
+        private readonly Material AlertText = new Material(Shader.Find("GUI/Text Shader"));
 
         public static string PreviousNotifi;
 
-        public static Dictionary<string, string> information = new Dictionary<string, string>();
+        public static readonly Dictionary<string, string> information = new Dictionary<string, string>();
 
         public static Text NotifiText;
         public static Text ModText;
@@ -57,7 +57,7 @@ namespace iiMenu.Notifications
         private bool HasInit;
         public static bool noRichText;
 
-        public static int NotifiCounter = 0;
+        public static int NotifiCounter;
 
         private void Start()
         {
@@ -288,7 +288,7 @@ namespace iiMenu.Notifications
                         }
                     }
 
-                    if (notificationSoundIndex != 0 && (Time.time > (timeMenuStarted + 5f)))
+                    if (notificationSoundIndex != 0 && Time.time > timeMenuStarted + 5f)
                         PlayNotificationSound();
 
                     if (inputTextColor != "green")
@@ -347,7 +347,7 @@ namespace iiMenu.Notifications
                     {
                         try
                         {
-                            CoroutineManager.RunCoroutine(NarrateText(NoRichtextTags(NotificationText, "")));
+                            CoroutineManager.RunCoroutine(NarrateText(NoRichtextTags(NotificationText)));
                         }
                         catch { }
                     }
@@ -360,7 +360,7 @@ namespace iiMenu.Notifications
         }
 
         public static void PlayNotificationSound() =>
-            Play2DAudio(LoadSoundFromURL(PluginInfo.ResourceURL + "/" + Settings.notificationSounds.Values.ToArray()[notificationSoundIndex] + ".wav", Settings.notificationSounds.Values.ToArray()[notificationSoundIndex] + ".wav"), buttonClickVolume / 10f);
+            Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/Notifications/{Settings.notificationSounds.Values.ToArray()[notificationSoundIndex]}.ogg", $"Audio/Menu/Notifications/{Settings.notificationSounds.Values.ToArray()[notificationSoundIndex]}.ogg"), buttonClickVolume / 10f);
 
         public static void ClearAllNotifications() =>
             NotifiText.text = "";
@@ -370,7 +370,7 @@ namespace iiMenu.Notifications
             if (string.IsNullOrEmpty(NotifiText.text))
                 return;
 
-            string[] lines = NotifiText.text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = NotifiText.text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries); 
 
             if (amount >= lines.Length)
             {
@@ -418,7 +418,7 @@ namespace iiMenu.Notifications
             }
         }
 
-        public static List<Coroutine> clearCoroutines = new List<Coroutine>();
+        public static readonly List<Coroutine> clearCoroutines = new List<Coroutine>();
 
     }
 }

@@ -4,23 +4,24 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using HarmonyLib;
-using System.Collections.Generic;
+using HarmonyLib;
+using iiMenu.Extensions;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static iiMenu.Managers.RigManager;
@@ -67,7 +68,12 @@ namespace iiMenu.Patches.Menu
             }
 
             if (angryBirds)
+            {
                 GorillaTagger.Instance.rigidbody.linearVelocity = __result;
+
+                if (dynamicSounds)
+                    LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Mods/Fun/AngryBirds/launch.ogg", "Audio/Mods/Fun/AngryBirds/launch.ogg").Play(buttonClickVolume / 10f);
+            }
         }
 
         // ChatGPT used for math.. because I'm only 14 and haven't learned this yet and am not taking a class for a Gorilla Tag mod
@@ -79,7 +85,6 @@ namespace iiMenu.Patches.Menu
 
             Vector3 displacement = targetPos - origin;
             Vector3 displacementXZ = new Vector3(displacement.x, 0, displacement.z);
-            Vector3 velocityXZ = new Vector3(targetVel.x, 0, targetVel.z);
 
             float g = -Physics.gravity.y;
 

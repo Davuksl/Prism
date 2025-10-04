@@ -4,22 +4,22 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using ExitGames.Client.Photon;
+using ExitGames.Client.Photon;
 using GorillaExtensions;
 using GorillaLocomotion;
 using GorillaNetworking;
@@ -29,7 +29,8 @@ using iiMenu.Mods;
 using iiMenu.Notifications;
 using Photon.Pun;
 using Photon.Realtime;
-using System;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,6 +45,7 @@ using Valve.Newtonsoft.Json;
 using Valve.Newtonsoft.Json.Linq;
 using static iiMenu.Managers.RigManager;
 using static iiMenu.Menu.Main;
+using JoinType = GorillaNetworking.JoinType;
 
 namespace iiMenu.Managers
 {
@@ -78,7 +80,7 @@ namespace iiMenu.Managers
         private static bool pingingState;
 
         private static GameObject pingObject;
-        private static Dictionary<VRRig, GameObject> starPool = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> starPool = new Dictionary<VRRig, GameObject>();
 
         public static bool RigNetworking = true;
         public static bool PlatformNetworking = true;
@@ -97,18 +99,15 @@ namespace iiMenu.Managers
             if (Time.time > UpdateTime)
             {
                 UpdateTime = Time.time + 30f;
-                CoroutineManager.RunCoroutine(UpdateFriendsList());
+                instance.StartCoroutine(UpdateFriendsList());
             }
 
             List<VRRig> toRemoveRigs = new List<VRRig>();
 
-            foreach (KeyValuePair<VRRig, GameObject> star in starPool)
+            foreach (var star in starPool.Where(star => !GorillaParent.instance.vrrigs.Contains(star.Key) || !IsPlayerFriend(GetPlayerFromVRRig(star.Key))))
             {
-                if (!GorillaParent.instance.vrrigs.Contains(star.Key) || !IsPlayerFriend(GetPlayerFromVRRig(star.Key)))
-                {
-                    toRemoveRigs.Add(star.Key);
-                    Destroy(star.Value);
-                }
+                toRemoveRigs.Add(star.Key);
+                Destroy(star.Value);
             }
 
             foreach (VRRig rig in toRemoveRigs)
@@ -116,16 +115,13 @@ namespace iiMenu.Managers
 
             List<VRRig> toRemoveGhosts = new List<VRRig>();
 
-            foreach (KeyValuePair<VRRig, float> ghostRig in ghostRigDelay)
+            foreach (var ghostRig in ghostRigDelay.Where(ghostRig => !GorillaParent.instance.vrrigs.Contains(ghostRig.Key) || Time.time > ghostRig.Value + 0.05f))
             {
-                if (!GorillaParent.instance.vrrigs.Contains(ghostRig.Key) || Time.time > (ghostRig.Value + 0.05f))
-                {
-                    toRemoveGhosts.Add(ghostRig.Key);
+                toRemoveGhosts.Add(ghostRig.Key);
 
-                    var ghostObjects = ghostRigPool[ghostRig.Key];
-                    foreach (GameObject ghostObject in new[] { ghostObjects.Item1, ghostObjects.Item2, ghostObjects.Item3, ghostObjects.Item4 })
-                        Destroy(ghostObject);
-                }
+                var ghostObjects = ghostRigPool[ghostRig.Key];
+                foreach (GameObject ghostObject in new[] { ghostObjects.Item1, ghostObjects.Item2, ghostObjects.Item3, ghostObjects.Item4 })
+                    Destroy(ghostObject);
             }
 
             foreach (VRRig rig in toRemoveGhosts)
@@ -150,7 +146,7 @@ namespace iiMenu.Managers
                             if (starMaterial == null)
                             {
                                 if (starTexture == null)
-                                    starTexture = LoadTextureFromResource("iiMenu.Resources.star.png");
+                                    starTexture = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.star.png");
 
                                 starMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit"))
                                 {
@@ -228,8 +224,8 @@ namespace iiMenu.Managers
                             Vector3 StartPosition = SwapGunHand ? GorillaTagger.Instance.leftHandTransform.position : GorillaTagger.Instance.rightHandTransform.position;
                             Vector3 Direction = SwapGunHand ? TrueLeftHand().forward : TrueRightHand().forward;
 
-                            Physics.Raycast(StartPosition + (Direction / 4f * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f)), Direction, out var Ray, 512f, NoInvisLayerMask());
-                            Vector3 EndPosition = Ray.point;
+                            Physics.Raycast(StartPosition + Direction / 4f * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f), Direction, out var Ray, 512f, NoInvisLayerMask());
+                            Vector3 EndPosition = Ray.point == Vector3.zero ? StartPosition + (Direction * 512f) : Ray.point;
 
                             pingLine.SetPosition(0, StartPosition);
                             pingLine.SetPosition(1, EndPosition);
@@ -267,13 +263,10 @@ namespace iiMenu.Managers
                 {
                     List<VRRig> toRemove = new List<VRRig>();
 
-                    foreach (var Platform in PlatformDictionary)
+                    foreach (var platform in PlatformDictionary.Where(Platform => !GorillaParent.instance.vrrigs.Contains(Platform.Key)))
                     {
-                        if (!GorillaParent.instance.vrrigs.Contains(Platform.Key))
-                        {
-                            toRemove.Add(Platform.Key);
-                            Destroy(Platform.Value);
-                        }
+                        toRemove.Add(platform.Key);
+                        Destroy(platform.Value);
                     }
 
                     foreach (VRRig rig in toRemove)
@@ -337,13 +330,13 @@ namespace iiMenu.Managers
         public static bool IsPlayerFriend(NetPlayer Player) =>
             instance.Friends.friends.Values.Any(friend => friend.currentUserID == Player.UserId);
 
-        private static Dictionary<VRRig, float> ghostRigDelay = new Dictionary<VRRig, float>();
-        private static Dictionary<VRRig, (GameObject, GameObject, GameObject, GameObject)> ghostRigPool = new Dictionary<VRRig, (GameObject, GameObject, GameObject, GameObject)>();
+        private static readonly Dictionary<VRRig, float> ghostRigDelay = new Dictionary<VRRig, float>();
+        private static readonly Dictionary<VRRig, (GameObject, GameObject, GameObject, GameObject)> ghostRigPool = new Dictionary<VRRig, (GameObject, GameObject, GameObject, GameObject)>();
 
-        private static Dictionary<VRRig, GameObject> leftPlatform = new Dictionary<VRRig, GameObject>();
-        private static Dictionary<VRRig, GameObject> rightPlatform = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> leftPlatform = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> rightPlatform = new Dictionary<VRRig, GameObject>();
 
-        private static Dictionary<VRRig, float> pingDelay = new Dictionary<VRRig, float>();
+        private static readonly Dictionary<VRRig, float> pingDelay = new Dictionary<VRRig, float>();
 
         public static void PlatformSpawned(bool leftHand, Vector3 position, Quaternion rotation, Vector3 scale, PrimitiveType spawnType)
         {
@@ -365,7 +358,7 @@ namespace iiMenu.Managers
         {
             try
             {
-                NetPlayer Sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false);
+                NetPlayer Sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender);
                 if (data.Code == FriendByte && (IsPlayerFriend(Sender) || ServerData.Administrators.ContainsKey(Sender.UserId) || ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId)))
                 {
                     VRRig SenderRig = GetVRRigFromPlayer(Sender);
@@ -475,11 +468,11 @@ namespace iiMenu.Managers
                                 lineRenderer.useWorldSpace = true;
 
                                 lineRenderer.SetPosition(0, PingPosition);
-                                lineRenderer.SetPosition(1, PingPosition + (Vector3.up * 99999f));
+                                lineRenderer.SetPosition(1, PingPosition + Vector3.up * 99999f);
                                 lineRenderer.material.shader = Shader.Find("GUI/Text Shader");
 
-                                PlayPositionAudio(GTPlayer.Instance.materialData[29].audio, 99999f, PingPosition);
-                                CoroutineManager.instance.StartCoroutine(FadePing(line));
+                                PlayPositionAudio(GTPlayer.Instance.materialData[29].audio, PingPosition);
+                                instance.StartCoroutine(FadePing(line));
 
                                 pingDelay[SenderRig] = Time.time + 0.1f;
 
@@ -557,8 +550,6 @@ namespace iiMenu.Managers
 
                                 break;
                             }
-                        default:
-                            break;
                     }
                 }
             }
@@ -571,7 +562,7 @@ namespace iiMenu.Managers
                 return;
 
             PhotonNetwork.RaiseEvent(FriendByte,
-                (new object[] { command })
+                new object[] { command }
                     .Concat(parameters)
                     .ToArray(),
             options, SendOptions.SendReliable);
@@ -581,12 +572,12 @@ namespace iiMenu.Managers
             ExecuteCommand(command, new RaiseEventOptions { TargetActors = targets }, parameters);
 
         public static void ExecuteCommand(string command, int target, params object[] parameters) =>
-            ExecuteCommand(command, new RaiseEventOptions { TargetActors = new int[] { target } }, parameters);
+            ExecuteCommand(command, new RaiseEventOptions { TargetActors = new[] { target } }, parameters);
 
         public static void ExecuteCommand(string command, ReceiverGroup target, params object[] parameters) =>
             ExecuteCommand(command, new RaiseEventOptions { Receivers = target }, parameters);
 
-        public static System.Collections.IEnumerator FadePing(GameObject line)
+        public static IEnumerator FadePing(GameObject line)
         {
             float startTime = Time.time;
             LineRenderer lineRenderer = line.GetComponent<LineRenderer>();
@@ -598,7 +589,7 @@ namespace iiMenu.Managers
             float startWidth = lineRenderer.startWidth;
             float endWidth = startWidth + 0.1f;
 
-            while (Time.time < (startTime + 3f))
+            while (Time.time < startTime + 3f)
             {
                 float time = (Time.time - startTime) / 3f;
 
@@ -618,7 +609,7 @@ namespace iiMenu.Managers
             Destroy(line);
         }
 
-        public System.Collections.IEnumerator UpdateFriendsList()
+        public IEnumerator UpdateFriendsList()
         {
             using UnityWebRequest request = new UnityWebRequest("https://iidk.online/getfriends", "GET");
             byte[] bodyRaw = Encoding.UTF8.GetBytes("{}");
@@ -639,7 +630,7 @@ namespace iiMenu.Managers
 
         public static void SendFriendRequest(string uid)
         {
-            CoroutineManager.instance.StartCoroutine(ExecuteAction(uid, "frienduser",
+            instance.StartCoroutine(ExecuteAction(uid, "frienduser",
                 () => NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully sent friend request.", 5000),
                 error => NotifiLib.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Could not send friend request: {error}", 5000)
             ));
@@ -647,7 +638,7 @@ namespace iiMenu.Managers
 
         public static void AcceptFriendRequest(string uid)
         {
-            CoroutineManager.instance.StartCoroutine(ExecuteAction(uid, "frienduser",
+            instance.StartCoroutine(ExecuteAction(uid, "frienduser",
                 () => NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully accepted friend request.", 5000),
                 error => NotifiLib.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Could not accept friend request: {error}", 5000)
             ));
@@ -655,7 +646,7 @@ namespace iiMenu.Managers
 
         public static void RemoveFriend(string uid)
         {
-            CoroutineManager.instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
+            instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
                 () => NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Removed friend from friends list.", 5000),
                 error => NotifiLib.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Could not remove friend from friends list: {error}", 5000)
             ));
@@ -663,12 +654,12 @@ namespace iiMenu.Managers
 
         public static void DenyFriendRequest(string uid)
         {
-            CoroutineManager.instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
+            instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
                 () => {
                     NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Denied friend request.", 5000);
 
                     if (SoundEffects)
-                        Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/doorslam.mp3", "doorslam.mp3"), buttonClickVolume / 10f);
+                        Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Friends/doorslam.ogg", "Audio/Friends/doorslam.ogg"), buttonClickVolume / 10f);
                 },
                 error => NotifiLib.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Could not deny friend request: {error}", 5000)
             ));
@@ -676,7 +667,7 @@ namespace iiMenu.Managers
 
         public static void CancelFriendRequest(string uid)
         {
-            CoroutineManager.instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
+            instance.StartCoroutine(ExecuteAction(uid, "unfrienduser",
                 () => NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Cancelled friend request.", 5000),
                 error => NotifiLib.SendNotification($"<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> Could not cancel friend request: {error}", 5000)
             ));
@@ -734,7 +725,7 @@ namespace iiMenu.Managers
             }));
 
             if (SoundEffects)
-                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/send.mp3", "send.mp3"), buttonClickVolume / 10f);
+                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Friends/send.ogg", "Audio/Friends/send.ogg"), buttonClickVolume / 10f);
 
             NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully sent message.", 5000);
         }
@@ -756,7 +747,7 @@ namespace iiMenu.Managers
             }
         }
 
-        public static System.Collections.IEnumerator ExecuteAction(string uid, string action, Action success, Action<string> failure)
+        public static IEnumerator ExecuteAction(string uid, string action, Action success, Action<string> failure)
         {
             UnityWebRequest request = new UnityWebRequest($"https://iidk.online/{action}", "POST");
 
@@ -784,8 +775,8 @@ namespace iiMenu.Managers
                     string responseText = request.downloadHandler.text;
                     Dictionary<string, object> responseJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseText);
 
-                    if (responseJson != null && responseJson.ContainsKey("error"))
-                        reason = responseJson["error"].ToString();
+                    if (responseJson != null && responseJson.TryGetValue("error", out var value))
+                        reason = value.ToString();
                 }
                 catch { }
 
@@ -836,7 +827,7 @@ namespace iiMenu.Managers
             if (onlineFriends.Length > previousOnlineCount && onlineFriends.Length > 0)
             {
                 if (SoundEffects)
-                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/online.mp3", "online.mp3"), buttonClickVolume / 10f);
+                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Friends/online.ogg", "Audio/Friends/online.ogg"), buttonClickVolume / 10f);
 
                 NotifiLib.SendNotification($"<color=grey>[</color><color=green>FRIENDS</color><color=grey>]</color> You have {onlineFriends.Length - (previousOnlineCount + (previousOnlineCount < 0 ? 1 : 0))}{(previousOnlineCount < 0 ? " " : " new ")}friend{(onlineFriends.Length > 1 ? "s" : "")} online.", 5000);
             }
@@ -844,7 +835,7 @@ namespace iiMenu.Managers
             if (instance.Friends.incoming.Values.Count > previousIncomingCount && instance.Friends.incoming.Values.Count > 0)
             {
                 if (SoundEffects)
-                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/dooropen.mp3", "dooropen.mp3"), buttonClickVolume / 10f);
+                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Friends/dooropen.ogg", "Audio/Friends/dooropen.ogg"), buttonClickVolume / 10f);
 
                 NotifiLib.SendNotification($"<color=grey>[</color><color=green>FRIENDS</color><color=grey>]</color> You have {instance.Friends.incoming.Values.Count - (previousIncomingCount + (previousIncomingCount < 0 ? 1 : 0))}{(previousIncomingCount < 0 ? " " : " new ")}friend request{(instance.Friends.incoming.Values.Count > 1 ? "s" : "")}.", 5000);
             }
@@ -852,10 +843,7 @@ namespace iiMenu.Managers
             previousOnlineCount = onlineFriends.Length;
             previousIncomingCount = instance.Friends.incoming.Values.Count;
 
-            if (onlineFriends.Length > 0)
-                GetIndex("Friends").overlapText = $"Friends <color=grey>[</color><color=green>{onlineFriends.Length} Online</color><color=grey>]</color>";
-            else
-                GetIndex("Friends").overlapText = null;
+            GetIndex("Friends").overlapText = onlineFriends.Length > 0 ? $"Friends <color=grey>[</color><color=green>{onlineFriends.Length} Online</color><color=grey>]</color>" : null;
 
             List<ButtonInfo> buttons = new List<ButtonInfo> {
                 new ButtonInfo {
@@ -1025,13 +1013,13 @@ namespace iiMenu.Managers
 
             if (friend.online && friend.currentRoom != "")
             {
-                buttons.AddRange(new ButtonInfo[]
+                buttons.AddRange(new[]
                 {
                     new ButtonInfo
                     {
                         buttonText = $"JoinFriend{friendTarget}",
                         overlapText = "Join Friend",
-                        method = () => PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(instance.Friends.friends[friendTarget].currentRoom, GorillaNetworking.JoinType.Solo),
+                        method = () => PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(instance.Friends.friends[friendTarget].currentRoom, JoinType.Solo),
                         isTogglable = false,
                         toolTip = $"Joins the user {friend.currentName}'s current room."
                     },
@@ -1319,7 +1307,7 @@ namespace iiMenu.Managers
 
                                 NotifiLib.SendNotification($"<color=grey>[</color><color=green>FRIENDS</color><color=grey>]</color> {friendName} has invited you to join them.", 5000);
 
-                                Prompt($"{friendName} has invited you to the room {to}, would you like to join them?", () => PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(to, GorillaNetworking.JoinType.Solo));
+                                Prompt($"{friendName} has invited you to the room {to}, would you like to join them?", () => PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(to, JoinType.Solo));
                                 break;
                             }
                         case "reqinvite":
@@ -1360,7 +1348,7 @@ namespace iiMenu.Managers
                                     break;
 
                                 if (SoundEffects)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/receive.mp3", "receive.mp3"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Friends/receive.ogg", "Audio/Friends/receive.ogg"), buttonClickVolume / 10f);
 
                                 string message = (string)obj["message"];
                                 string color = (string)obj["color"];

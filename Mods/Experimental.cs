@@ -4,17 +4,17 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -31,18 +31,23 @@ using iiMenu.Patches.Menu;
 using Photon.Pun;
 using Photon.Realtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using TMPro;
 using UnityEngine;
 using static iiMenu.Managers.RigManager;
 using static iiMenu.Menu.Main;
 using Console = iiMenu.Classes.Menu.Console;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace iiMenu.Mods
 {
-    public class Experimental
+    public static class Experimental
     {
         public static void FixDuplicateButtons()
         {
@@ -62,10 +67,10 @@ namespace iiMenu.Mods
                     previousNames.Add(button.buttonText);
                 }
             }
-            NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully fixed " + duplicateButtons.ToString() + " broken buttons.");
+            NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Successfully fixed " + duplicateButtons + " broken buttons.");
         }
 
-        private static Dictionary<Renderer, Material> oldMats = new Dictionary<Renderer, Material>();
+        private static readonly Dictionary<Renderer, Material> oldMats = new Dictionary<Renderer, Material>();
         public static void BetterFPSBoost()
         {
             foreach (Renderer v in Resources.FindObjectsOfTypeAll<Renderer>())
@@ -117,7 +122,7 @@ namespace iiMenu.Mods
                 try
                 {
                     text += "\n====================================\n";
-                    text += i.ToString() + " ; " + oneshot.matName + " ; " + oneshot.slidePercent.ToString() + "% ; " + (oneshot.audio == null ? "none" : oneshot.audio.name);
+                    text += i + " ; " + oneshot.matName + " ; " + oneshot.slidePercent + "% ; " + (oneshot.audio == null ? "none" : oneshot.audio.name);
                 }
                 catch { LogManager.Log("Failed to log sound"); }
                 i++;
@@ -128,7 +133,7 @@ namespace iiMenu.Mods
 
             File.WriteAllText(fileName, text);
 
-            string filePath = Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, fileName);
+            string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, fileName);
             filePath = filePath.Split("BepInEx\\")[0] + fileName;
 
             Process.Start(filePath);
@@ -137,16 +142,14 @@ namespace iiMenu.Mods
         public static void DumpCosmeticData()
         {
             string text = "Cosmetic Data\n(from GorillaNetworking.CosmeticsController.allCosmeticsDict)";
-            int i = 0;
             foreach (CosmeticsController.CosmeticItem hat in CosmeticsController.instance.allCosmetics)
             {
                 try
                 {
                     text += "\n====================================\n";
-                    text += hat.itemName + " ; " + hat.displayName + " (override " + hat.overrideDisplayName + ") ; " + hat.cost.ToString() + "SR ; canTryOn = " + hat.canTryOn.ToString();
+                    text += hat.itemName + " ; " + hat.displayName + " (override " + hat.overrideDisplayName + ") ; " + hat.cost + "SR ; canTryOn = " + hat.canTryOn;
                 }
                 catch { LogManager.Log("Failed to log hat"); }
-                i++;
             }
             text += "\n====================================\n";
             text += "Text file generated with ii's Stupid Menu";
@@ -154,7 +157,7 @@ namespace iiMenu.Mods
 
             File.WriteAllText(fileName, text);
 
-            string filePath = Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, fileName);
+            string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, fileName);
             filePath = filePath.Split("BepInEx\\")[0] + fileName;
 
             Process.Start(filePath);
@@ -163,21 +166,19 @@ namespace iiMenu.Mods
         public static void DecryptableCosmeticData()
         {
             string text = "";
-            int i = 0;
             foreach (CosmeticsController.CosmeticItem hat in CosmeticsController.instance.allCosmetics)
             {
                 try
                 {
-                    text += hat.itemName + ";;" + hat.overrideDisplayName + ";;" + hat.cost.ToString() + "\n";
+                    text += hat.itemName + ";;" + hat.overrideDisplayName + ";;" + hat.cost + "\n";
                 }
                 catch { LogManager.Log("Failed to log hat"); }
-                i++;
             }
             string fileName = $"{PluginInfo.BaseDirectory}/DecryptableCosmeticData.txt";
 
             File.WriteAllText(fileName, text);
 
-            string filePath = Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, fileName);
+            string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, fileName);
             filePath = filePath.Split("BepInEx\\")[0] + fileName;
 
             Process.Start(filePath);
@@ -192,7 +193,7 @@ namespace iiMenu.Mods
                 try
                 {
                     text += "\n====================================\n";
-                    text += i.ToString() + " ; " + name;
+                    text += i + " ; " + name;
                 }
                 catch { LogManager.Log("Failed to log RPC"); }
                 i++;
@@ -203,7 +204,7 @@ namespace iiMenu.Mods
 
             File.WriteAllText(fileName, text);
 
-            string filePath = Path.Combine(System.Reflection.Assembly.GetExecutingAssembly().Location, fileName);
+            string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, fileName);
             filePath = filePath.Split("BepInEx\\")[0] + fileName;
             
             Process.Start(filePath);
@@ -222,8 +223,8 @@ namespace iiMenu.Mods
             GUIUtility.systemCopyBuffer = id;
         }
         
-        public static int restartIndex = 0;
-        public static float restartDelay = 0f;
+        public static int restartIndex;
+        public static float restartDelay;
         public static Vector3 restartPosition;
         public static string restartRoom;
         public static void SafeRestartGame()
@@ -231,7 +232,7 @@ namespace iiMenu.Mods
             switch (restartIndex)
             {
                 case 0:
-                    string readPath = System.Reflection.Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"RestartData.txt";
+                    string readPath = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "RestartData.txt";
                     if (File.Exists(readPath))
                     {
                         string data = File.ReadAllText(readPath);
@@ -242,23 +243,20 @@ namespace iiMenu.Mods
                     }
                     else
                     {
-                        if (PhotonNetwork.InRoom)
-                            restartRoom = PhotonNetwork.CurrentRoom.Name;
-                        else
-                            restartRoom = "";
+                        restartRoom = PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : "";
                         restartPosition = GTPlayer.Instance.transform.position;
                         restartIndex = 1;
                     }
                     restartDelay = Time.time + 6f;
                     break;
                 case 1:
-                    string writePath = System.Reflection.Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"RestartData.txt";
+                    string writePath = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "RestartData.txt";
                     Settings.SavePreferences();
                     File.WriteAllText(writePath, restartRoom + $";{restartPosition.x},{restartPosition.y},{restartPosition.z}");
                     restartIndex = 2;
                     break;
                 case 2:
-                    string existsPath = System.Reflection.Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"RestartData.txt";
+                    string existsPath = Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "RestartData.txt";
                     if (File.Exists(existsPath) && Time.time > restartDelay)
                     {
                         Important.RestartGame();
@@ -274,7 +272,7 @@ namespace iiMenu.Mods
                     else
                     {
                         TeleportPlayer(restartPosition);
-                        File.Delete(System.Reflection.Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + $"RestartData.txt");
+                        File.Delete(Assembly.GetExecutingAssembly().Location.Split("BepInEx\\")[0] + "RestartData.txt");
                         NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> Restarted game with information.");
                         restartIndex = 4;
                         GetIndex("Safe Restart Game").enabled = false;
@@ -291,7 +289,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -314,7 +311,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -337,7 +333,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -357,7 +352,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (gunLocked && lockTarget != null)
                 {
@@ -403,7 +397,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (gunLocked && lockTarget != null)
                 {
@@ -439,7 +432,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (gunLocked && lockTarget != null)
                 {
@@ -476,7 +468,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (gunLocked && lockTarget != null)
                 {
@@ -504,6 +495,40 @@ namespace iiMenu.Mods
                 gunLocked = false;
             }
         }
+        
+        public static void AdminGiveLowGravity()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                RaycastHit Ray = GunData.Ray;
+
+                if (gunLocked && lockTarget != null)
+                {
+                    if (Time.time > adminEventDelay)
+                    {
+                        adminEventDelay = Time.time + 0.2f;
+                        Console.ExecuteCommand("vel", GetPlayerFromVRRig(lockTarget).ActorNumber, (lockTarget.bodyTransform.position - speedLastVel) * 5f + Vector3.up * 0.5f);
+                        speedLastVel = lockTarget.bodyTransform.position;
+                        RPCProtection();
+                    }
+                }
+                if (GetGunInput(true))
+                {
+                    VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
+                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    {
+                        gunLocked = true;
+                        speedLastVel = gunTarget.bodyTransform.position;
+                        lockTarget = gunTarget;
+                    }
+                }
+            }
+            else
+            {
+                gunLocked = false;
+            }
+        }
 
         public static void AdminVibrateGun()
         {
@@ -511,7 +536,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -534,7 +558,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -554,7 +577,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -574,7 +596,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -599,7 +620,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -620,7 +640,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -640,7 +659,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -654,8 +672,8 @@ namespace iiMenu.Mods
             }
         }
 
-        private static Dictionary<VRRig, Coroutine> freezePool = new Dictionary<VRRig, Coroutine>();
-        private static System.Collections.IEnumerator FreezeCoroutine(VRRig rig)
+        private static readonly Dictionary<VRRig, Coroutine> freezePool = new Dictionary<VRRig, Coroutine>();
+        private static IEnumerator FreezeCoroutine(VRRig rig)
         {
             Console.ExecuteCommand("forceenable", GetPlayerFromVRRig(rig).ActorNumber, "Zero Gravity", true);
             Vector3 pos = rig.transform.position;
@@ -672,7 +690,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -680,13 +697,16 @@ namespace iiMenu.Mods
                     if (gunTarget && !VrRigIsLocal(gunTarget))
                     {
                         adminEventDelay = Time.time + 0.1f;
-                        if (freeze && !freezePool.ContainsKey(gunTarget))
-                            freezePool.Add(gunTarget, CoroutineManager.instance.StartCoroutine(FreezeCoroutine(gunTarget)));
-                        if (!freeze && freezePool.ContainsKey(gunTarget))
+                        switch (freeze)
                         {
-                            CoroutineManager.instance.StopCoroutine(freezePool[gunTarget]);
-                            Console.ExecuteCommand("forceenable", GetPlayerFromVRRig(gunTarget).ActorNumber, "Zero Gravity", false);
-                            freezePool.Remove(gunTarget);
+                            case true when !freezePool.ContainsKey(gunTarget):
+                                freezePool.Add(gunTarget, CoroutineManager.instance.StartCoroutine(FreezeCoroutine(gunTarget)));
+                                break;
+                            case false when freezePool.ContainsKey(gunTarget):
+                                CoroutineManager.instance.StopCoroutine(freezePool[gunTarget]);
+                                Console.ExecuteCommand("forceenable", GetPlayerFromVRRig(gunTarget).ActorNumber, "Zero Gravity", false);
+                                freezePool.Remove(gunTarget);
+                                break;
                         }
                     }
                 }
@@ -698,7 +718,6 @@ namespace iiMenu.Mods
             if (GetGunInput(false))
             {
                 var GunData = RenderGun();
-                RaycastHit Ray = GunData.Ray;
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
@@ -715,7 +734,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -729,13 +747,33 @@ namespace iiMenu.Mods
             }
         }
 
+        public static void AdminCrashBypassGun()
+        {
+            if (GetGunInput(false))
+            {
+                var GunData = RenderGun();
+                RaycastHit Ray = GunData.Ray;
+
+                if (GetGunInput(true) && Time.time > adminEventDelay)
+                {
+                    VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
+                    if (gunTarget && !PlayerIsLocal(gunTarget))
+                    {
+                        if (ServerData.Administrators.ContainsKey(GetPlayerFromVRRig(gunTarget).UserId))
+                            return;
+                        adminEventDelay = Time.time + 0.1f;
+                        Console.ExecuteCommand("tp", GetPlayerFromVRRig(gunTarget).ActorNumber, new Vector3(0f, 1000000f, 0f));
+                    }
+                }
+            }
+        }
+
         public static void AdminLockdownGun(bool enable)
         {
             if (GetGunInput(false))
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -749,7 +787,7 @@ namespace iiMenu.Mods
             }
         }
 
-        private static List<int> fullActorNumbers = new List<int>();
+        private static readonly List<int> fullActorNumbers = new List<int>();
         public static void FullToggleMenu(int actorNumber, bool enable)
         {
             if (enable)
@@ -766,7 +804,6 @@ namespace iiMenu.Mods
                     Console.ExecuteCommand("toggle", actorNumber, "Save Preferences");
                     Console.ExecuteCommand("forceenable", actorNumber, "Disable Autosave", true);
                     Console.ExecuteCommand("forceenable", actorNumber, "Panic", true);
-                    Console.ExecuteCommand("togglemenu", actorNumber, enable);
                 }
             }
 
@@ -779,7 +816,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -812,34 +848,24 @@ namespace iiMenu.Mods
                 FullToggleMenu(Player.ActorNumber, enable);
         }
 
-        private static float stdell = 0f;
-        private static VRRig thestrangled = null;
-        private static VRRig thestrangledleft = null;
+        private static float stdell;
+        private static VRRig thestrangled;
+        private static VRRig thestrangledleft;
         public static void AdminStrangle()
         {
             if (leftGrab)
             {
                 if (thestrangledleft == null)
                 {
-                    foreach (VRRig rig in GorillaParent.instance.vrrigs)
+                    foreach (var rig in GorillaParent.instance.vrrigs.Where(rig => !rig.isLocal).Where(rig => Vector3.Distance(rig.headMesh.transform.position, GorillaTagger.Instance.leftHandTransform.position) < 0.2f))
                     {
-                        if (!rig.isLocal)
+                        thestrangledleft = rig;
+                        if (PhotonNetwork.InRoom)
                         {
-                            if (Vector3.Distance(rig.headMesh.transform.position, GorillaTagger.Instance.leftHandTransform.position) < 0.2f)
-                            {
-                                thestrangledleft = rig;
-                                if (PhotonNetwork.InRoom)
-                                {
-                                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, new object[]{
-                                        89,
-                                        true,
-                                        999999f
-                                    });
-                                }
-                                else
-                                    VRRig.LocalRig.PlayHandTapLocal(89, true, 999999f);
-                            }
+                            GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, 89, true, 999999f);
                         }
+                        else
+                            VRRig.LocalRig.PlayHandTapLocal(89, true, 999999f);
                     }
                 }
                 else
@@ -860,13 +886,7 @@ namespace iiMenu.Mods
                     } catch { }
                     thestrangledleft = null;
                     if (PhotonNetwork.InRoom)
-                    {
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, new object[]{
-                            89,
-                            true,
-                            999999f
-                        });
-                    }
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, 89, true, 999999f);
                     else
                         VRRig.LocalRig.PlayHandTapLocal(89, true, 999999f);
                 }
@@ -876,25 +896,13 @@ namespace iiMenu.Mods
             {
                 if (thestrangled == null)
                 {
-                    foreach (VRRig rig in GorillaParent.instance.vrrigs)
+                    foreach (var rig in GorillaParent.instance.vrrigs.Where(rig => !rig.isLocal).Where(rig => Vector3.Distance(rig.headMesh.transform.position, GorillaTagger.Instance.rightHandTransform.position) < 0.2f))
                     {
-                        if (!rig.isLocal)
-                        {
-                            if (Vector3.Distance(rig.headMesh.transform.position, GorillaTagger.Instance.rightHandTransform.position) < 0.2f)
-                            {
-                                thestrangled = rig;
-                                if (PhotonNetwork.InRoom)
-                                {
-                                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, new object[]{
-                                        89,
-                                        false,
-                                        999999f
-                                    });
-                                }
-                                else
-                                    VRRig.LocalRig.PlayHandTapLocal(89, false, 999999f);
-                            }
-                        }
+                        thestrangled = rig;
+                        if (PhotonNetwork.InRoom)
+                            GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, 89, false, 999999f);
+                        else
+                            VRRig.LocalRig.PlayHandTapLocal(89, false, 999999f);
                     }
                 } else
                 {
@@ -915,13 +923,7 @@ namespace iiMenu.Mods
                     } catch { }
                     thestrangled = null;
                     if (PhotonNetwork.InRoom)
-                    {
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, new object[]{
-                            89,
-                            false,
-                            999999f
-                        });
-                    }
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.All, 89, false, 999999f);
                     else
                         VRRig.LocalRig.PlayHandTapLocal(89, false, 999999f);
                 }
@@ -933,7 +935,6 @@ namespace iiMenu.Mods
             if (GetGunInput(false))
             {
                 var GunData = RenderGun();
-                RaycastHit Ray = GunData.Ray;
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
@@ -949,23 +950,22 @@ namespace iiMenu.Mods
             if (GetGunInput(false))
             {
                 var GunData = RenderGun();
-                RaycastHit Ray = GunData.Ray;
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
                     adminEventDelay = Time.time + 0.1f;
-                    Console.ExecuteCommand("platf", ReceiverGroup.All, NewPointer.transform.position, RandomVector3(), RandomVector3(360f), UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f), 1f);
+                    Console.ExecuteCommand("platf", ReceiverGroup.All, NewPointer.transform.position, RandomVector3(), RandomVector3(360f), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1f);
                 }
             }
         }
 
         private static float lastnetscale = 1f;
-        private static float scalenetdel = 0f;
-        private static int lastplayercount = 0;
+        private static float scalenetdel;
+        private static int lastplayercount;
         public static void AdminNetworkScale()
         {
-            if (Time.time > scalenetdel && (lastnetscale != VRRig.LocalRig.scaleFactor || PhotonNetwork.PlayerList.Length != lastplayercount))
+            if (Time.time > scalenetdel && (!Mathf.Approximately(lastnetscale, VRRig.LocalRig.scaleFactor) || PhotonNetwork.PlayerList.Length != lastplayercount))
             {
                 Console.ExecuteCommand("scale", ReceiverGroup.All, VRRig.LocalRig.scaleFactor);
                 scalenetdel = Time.time + 0.05f;
@@ -982,7 +982,6 @@ namespace iiMenu.Mods
             if (GetGunInput(false))
             {
                 var GunData = RenderGun();
-                RaycastHit Ray = GunData.Ray;
                 GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
@@ -1007,7 +1006,7 @@ namespace iiMenu.Mods
             if (Time.time > adminEventDelay)
             {
                 adminEventDelay = Time.time + 0.1f;
-                Physics.Raycast(GorillaTagger.Instance.headCollider.transform.position + new Vector3(UnityEngine.Random.Range(-10f, 10f), 10f, UnityEngine.Random.Range(-10f, 10f)), Vector3.down, out var Ray, 512f, NoInvisLayerMask());
+                Physics.Raycast(GorillaTagger.Instance.headCollider.transform.position + new Vector3(Random.Range(-10f, 10f), 10f, Random.Range(-10f, 10f)), Vector3.down, out var Ray, 512f, NoInvisLayerMask());
                 VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
                 if (gunTarget && !VrRigIsLocal(gunTarget))
                 {
@@ -1026,7 +1025,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (gunLocked && lockTarget != null)
                 {
@@ -1043,17 +1041,17 @@ namespace iiMenu.Mods
                         whereOriginalPlayerPos = gunTarget.transform.position;
 
                         int actorNumber = GetPlayerFromVRRig(gunTarget).ActorNumber;
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 16f, 0f), new Vector3(10f, 1f, 10f));
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 24f, 0f), new Vector3(10f, 1f, 10f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 16f, 0f), new Vector3(10f, 1f, 10f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 24f, 0f), new Vector3(10f, 1f, 10f));
                         
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(4f, 20f, 0f), new Vector3(1f, 10f, 10f));
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(-4f, 20f, 0f), new Vector3(1f, 10f, 10f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(4f, 20f, 0f), new Vector3(1f, 10f, 10f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(-4f, 20f, 0f), new Vector3(1f, 10f, 10f));
                         
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 20f, 4f), new Vector3(10f, 10f, 1f));
-                        Console.ExecuteCommand("platf", new int[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 20f, -4f), new Vector3(10f, 10f, 1f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 20f, 4f), new Vector3(10f, 10f, 1f));
+                        Console.ExecuteCommand("platf", new[] { actorNumber, PhotonNetwork.LocalPlayer.ActorNumber }, new Vector3(0f, 20f, -4f), new Vector3(10f, 10f, 1f));
 
                         GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                        UnityEngine.Object.Destroy(platform, 60f);
+                        Object.Destroy(platform, 60f);
                         platform.GetComponent<Renderer>().material.color = Color.black;
                         platform.transform.position = new Vector3(0f, 20f, 0f);
                         platform.transform.localScale = new Vector3(10f, 1f, 10f);
@@ -1114,7 +1112,7 @@ namespace iiMenu.Mods
         {
             try
             {
-                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false);
+                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender);
                 if (data.Code == Console.ConsoleByte && sender != PhotonNetwork.LocalPlayer)
                 {
                     object[] args = (object[])data.CustomData;
@@ -1125,7 +1123,7 @@ namespace iiMenu.Mods
                             if (GetIndex("Menu User Name Tags").enabled && ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
                             {
                                 VRRig vrrig = GetVRRigFromPlayer(sender);
-                                if (!nametags.ContainsKey(vrrig))
+                                if (!nametags.TryGetValue(vrrig, out var nametag))
                                 {
                                     GameObject go = new GameObject("iiMenu_Nametag");
                                     go.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
@@ -1145,7 +1143,7 @@ namespace iiMenu.Mods
                                     nametags.Add(vrrig, go);
                                 } else
                                 {
-                                    TextMesh textMesh = nametags[vrrig].GetComponent<TextMesh>();
+                                    TextMesh textMesh = nametag.GetComponent<TextMesh>();
 
                                     Color userColor = Color.red;
                                     if (args.Length > 2)
@@ -1175,7 +1173,7 @@ namespace iiMenu.Mods
             catch { }
         }
 
-        private static Dictionary<VRRig, GameObject> nametags = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> nametags = new Dictionary<VRRig, GameObject>();
         public static void AdminMenuUserTags()
         {
             if (PhotonNetwork.InRoom && (!lastInRoom || PhotonNetwork.PlayerList.Length != lastPlayerCount))
@@ -1190,7 +1188,7 @@ namespace iiMenu.Mods
             {
                 if (!GorillaParent.instance.vrrigs.Contains(nametag.Key))
                 {
-                    UnityEngine.Object.Destroy(nametag.Value);
+                    Object.Destroy(nametag.Value);
                     nametags.Remove(nametag.Key);
                 } else
                 {
@@ -1208,7 +1206,7 @@ namespace iiMenu.Mods
         public static void DisableAdminMenuUserTags()
         {
             foreach (KeyValuePair<VRRig, GameObject> nametag in nametags)
-                UnityEngine.Object.Destroy(nametag.Value);
+                Object.Destroy(nametag.Value);
 
             nametags.Clear();
         }
@@ -1223,12 +1221,12 @@ namespace iiMenu.Mods
             }
         }
 
-        private static Dictionary<VRRig, string> menuUsers = new Dictionary<VRRig, string>();
+        private static readonly Dictionary<VRRig, string> menuUsers = new Dictionary<VRRig, string>();
         public static void AdminTracerSys(EventData data)
         {
             try
             {
-                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false);
+                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender);
                 if (data.Code == Console.ConsoleByte && sender != PhotonNetwork.LocalPlayer)
                 {
                     object[] args = (object[])data.CustomData;
@@ -1239,7 +1237,7 @@ namespace iiMenu.Mods
                             if (ServerData.Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
                             {
                                 VRRig vrrig = GetVRRigFromPlayer(sender);
-                                if (!nametags.ContainsKey(vrrig))
+                                if (!nametags.TryGetValue(vrrig, out var nametag))
                                 {
                                     GameObject go = new GameObject("iiMenu_Nametag");
                                     go.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
@@ -1260,7 +1258,7 @@ namespace iiMenu.Mods
                                 }
                                 else
                                 {
-                                    TextMesh textMesh = nametags[vrrig].GetComponent<TextMesh>();
+                                    TextMesh textMesh = nametag.GetComponent<TextMesh>();
 
                                     Color userColor = Color.red;
                                     if (args.Length > 2)
@@ -1325,7 +1323,7 @@ namespace iiMenu.Mods
             }
         }
 
-        public static Dictionary<string, string> onConduct = new Dictionary<string, string>();
+        public static readonly Dictionary<string, string> onConduct = new Dictionary<string, string>();
         public static void ConsoleOnConduct()
         {
             if (PhotonNetwork.InRoom && (!lastInRoom || PhotonNetwork.PlayerList.Length != lastPlayerCount) && !GetIndex("Menu User Name Tags").enabled)
@@ -1340,7 +1338,7 @@ namespace iiMenu.Mods
                 else
                     conductText += item.Value + "\\n";
             }
-            GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/COCBodyText_TitleData").GetComponent<TMPro.TextMeshPro>().text = conductText;
+            GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/COCBodyText_TitleData").GetComponent<TextMeshPro>().text = conductText;
         }
 
         public static float FindUserTime;
@@ -1370,7 +1368,7 @@ namespace iiMenu.Mods
             }
         }
 
-        private static float thingdeb = 0f;
+        private static float thingdeb;
         public static void AdminPunchMod()
         {
             if (Time.time > thingdeb)
@@ -1401,7 +1399,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -1437,7 +1434,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -1460,16 +1456,16 @@ namespace iiMenu.Mods
             Console.ExecuteCommand("isusing", ReceiverGroup.All);
         }
 
-        private static bool lastLasering = false;
+        private static bool lastLasering;
         public static void AdminLaser()
         {
             if (leftPrimary || rightPrimary)
             {
                 Vector3 dir = rightPrimary ? VRRig.LocalRig.rightHandTransform.right : -VRRig.LocalRig.leftHandTransform.right;
-                Vector3 startPos = (rightPrimary ? VRRig.LocalRig.rightHandTransform.position : VRRig.LocalRig.leftHandTransform.position) + (dir * 0.1f);
+                Vector3 startPos = (rightPrimary ? VRRig.LocalRig.rightHandTransform.position : VRRig.LocalRig.leftHandTransform.position) + dir * 0.1f;
                 try
                 {
-                    Physics.Raycast(startPos + (dir / 3f), dir, out var Ray, 512f, NoInvisLayerMask());
+                    Physics.Raycast(startPos + dir / 3f, dir, out var Ray, 512f, NoInvisLayerMask());
                     VRRig gunTarget = Ray.collider.GetComponentInParent<VRRig>();
                     if (gunTarget && !VrRigIsLocal(gunTarget))
                         Console.ExecuteCommand("silkick", ReceiverGroup.All, GetPlayerFromVRRig(gunTarget).UserId);
@@ -1487,20 +1483,20 @@ namespace iiMenu.Mods
             lastLasering = isLasering;
         }
 
-        private static float beamDelay = 0f;
+        private static float beamDelay;
         public static void AdminBeam()
         {
             if (rightTrigger > 0.5f && Time.time > beamDelay)
             {
                 beamDelay = Time.time + 0.05f;
-                float h = (Time.frameCount / 180f) % 1f;
+                float h = Time.frameCount / 180f % 1f;
                 Color color = Color.HSVToRGB(h, 1f, 1f);
                 Console.ExecuteCommand("lr", ReceiverGroup.All, color.r, color.g, color.b, color.a, 0.5f, GorillaTagger.Instance.headCollider.transform.position + new Vector3(0f, 0.5f, 0f), GorillaTagger.Instance.headCollider.transform.position + new Vector3(Mathf.Cos((float)Time.frameCount / 30) * 100f, 0.5f, Mathf.Sin((float)Time.frameCount / 30) * 100f), 0.1f);
             }
         }
 
-        private static float startTimeTrigger = 0f;
-        private static bool lastTriggerLaserSpam = false;
+        private static float startTimeTrigger;
+        private static bool lastTriggerLaserSpam;
         public static void AdminFractals()
         {
             if (rightTrigger > 0.5f && !lastTriggerLaserSpam)
@@ -1511,9 +1507,9 @@ namespace iiMenu.Mods
             if (rightTrigger > 0.5f && Time.time > beamDelay)
             {
                 beamDelay = Time.time + 0.5f;
-                float h = (Time.frameCount / 180f) % 1f;
-                Color color = Color.HSVToRGB(h, 1f, 1f);
-                Console.ExecuteCommand("lr", ReceiverGroup.All, "lr", 0f, 1f, 1f, 0.3f, 0.25f, GorillaTagger.Instance.bodyCollider.transform.position, GorillaTagger.Instance.headCollider.transform.position + new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f)).normalized * 1000f, 20f - (Time.time - startTimeTrigger));
+                float h = Time.frameCount / 180f % 1f;
+                Color.HSVToRGB(h, 1f, 1f);
+                Console.ExecuteCommand("lr", ReceiverGroup.All, "lr", 0f, 1f, 1f, 0.3f, 0.25f, GorillaTagger.Instance.bodyCollider.transform.position, GorillaTagger.Instance.headCollider.transform.position + new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f)).normalized * 1000f, 20f - (Time.time - startTimeTrigger));
             }
         }
 
@@ -1532,7 +1528,6 @@ namespace iiMenu.Mods
             {
                 var GunData = RenderGun();
                 RaycastHit Ray = GunData.Ray;
-                GameObject NewPointer = GunData.NewPointer;
 
                 if (GetGunInput(true) && Time.time > adminEventDelay)
                 {
@@ -1594,9 +1589,7 @@ namespace iiMenu.Mods
                 if (oldCosmetics != CosmeticsController.instance.currentWornSet.ToPackedIDArray() || forceRun)
                 {
                     oldCosmetics = CosmeticsController.instance.currentWornSet.ToPackedIDArray();
-                    string concat = "";
-                    foreach (string cosmetic in CosmeticsController.instance.currentWornSet.ToDisplayNameArray())
-                        concat += cosmetic;
+                    string concat = CosmeticsController.instance.currentWornSet.ToDisplayNameArray().Aggregate("", (current, cosmetic) => current + cosmetic);
 
                     if (!string.IsNullOrEmpty(concat))
                     {
@@ -1609,13 +1602,11 @@ namespace iiMenu.Mods
 
         public static void OnPlayerJoinSpoof(NetPlayer player)
         {
-            string concat = "";
-            foreach (string cosmetic in CosmeticsController.instance.currentWornSet.ToDisplayNameArray())
-                concat += cosmetic;
+            string concat = CosmeticsController.instance.currentWornSet.ToDisplayNameArray().Aggregate("", (current, cosmetic) => current + cosmetic);
 
             if (!string.IsNullOrEmpty(concat))
             {
-                Console.ExecuteCommand("cosmetic", new int[] { player.ActorNumber }, concat);
+                Console.ExecuteCommand("cosmetic", new[] { player.ActorNumber }, concat);
                 GorillaTagger.Instance.myVRRig.SendRPC("RPC_UpdateCosmeticsWithTryonPacked", RpcTarget.Others, CosmeticsController.instance.currentWornSet.ToPackedIDArray(), CosmeticsController.instance.tryOnSet.ToPackedIDArray());
             }
         }

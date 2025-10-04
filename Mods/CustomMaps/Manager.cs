@@ -4,17 +4,17 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -33,9 +33,9 @@ using static iiMenu.Menu.Main;
 
 namespace iiMenu.Mods.CustomMaps
 {
-    public class Manager
+    public static class Manager
     {
-        private static Dictionary<long, string> mapScriptArchives = new Dictionary<long, string>();
+        private static readonly Dictionary<long, string> mapScriptArchives = new Dictionary<long, string>();
         public static void UpdateCustomMapsTab(long? overwriteId = null)
         {
             int category = GetCategory("Custom Maps");
@@ -53,7 +53,7 @@ namespace iiMenu.Mods.CustomMaps
                 else
                     buttons.AddRange(map.Buttons);
 
-                buttons.AddRange(new ButtonInfo[]
+                buttons.AddRange(new[]
                 {
                     new ButtonInfo { buttonText = " ", label = true },
                     new ButtonInfo { buttonText = "Edit Custom Script", method =() => EditUserScript(), isTogglable = false, toolTip = "Opens your custom script for this map." },
@@ -136,9 +136,9 @@ namespace iiMenu.Mods.CustomMaps
         }
 
         public static void RevertCustomScript(int line) =>
-            RevertCustomScript(new int[] { line });
+            RevertCustomScript(new[] { line });
 
-        public static Dictionary<long, CustomMap> mapCache = new Dictionary<long, CustomMap>();
+        public static readonly Dictionary<long, CustomMap> mapCache = new Dictionary<long, CustomMap>();
         public static CustomMap GetMapByID(long id)
         {
             if (!mapCache.TryGetValue(id, out var instance))

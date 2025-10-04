@@ -4,23 +4,23 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using iiMenu.Menu;
-using System;
+using iiMenu.Menu;
+﻿using System;
 using System.Linq;
 using UnityEngine;
 
@@ -29,20 +29,20 @@ namespace iiMenu.Classes.Menu
     public class ExtGradient
     {
         public static GradientColorKey[] GetSolidGradient(Color color) =>
-            new GradientColorKey[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) };
+            new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) };
 
         public static GradientColorKey[] GetSimpleGradient(Color a, Color b) =>
-            new GradientColorKey[] { new GradientColorKey(a, 0f), new GradientColorKey(b, 0.5f), new GradientColorKey(a, 1f) };
+            new[] { new GradientColorKey(a, 0f), new GradientColorKey(b, 0.5f), new GradientColorKey(a, 1f) };
 
         public GradientColorKey[] colors = GetSolidGradient(Color.magenta);
 
         public Color GetColor(int index)
         {
             if (rainbow)
-                return Color.HSVToRGB((Time.time + (index / 8)) % 1f, 1f, 1f);
+                return Color.HSVToRGB((Time.time + index / 8) % 1f, 1f, 1f);
 
             if (pastelRainbow)
-                return Color.HSVToRGB((Time.time + (index / 8)), 0.3f, 1f);
+                return Color.HSVToRGB(Time.time + index / 8, 0.3f, 1f);
 
             if (epileptic)
                 return Main.RandomColor();
@@ -128,7 +128,7 @@ namespace iiMenu.Classes.Menu
         }
 
         public Color GetCurrentColor(float offset = 0f) =>
-            GetColorTime((offset + (Time.time / (Main.slowFadeColors ? 10f : 2f))) % 1f);
+            GetColorTime((offset + Time.time / (Main.slowFadeColors ? 10f : 2f)) % 1f);
 
         public bool IsFlat() =>
             !rainbow && !pastelRainbow && !epileptic && !copyRigColor &&

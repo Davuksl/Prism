@@ -4,27 +4,27 @@
  *
  * Copyright (C) 2025  Goldentrophy Software
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-﻿using ExitGames.Client.Photon;
+using ExitGames.Client.Photon;
 using GorillaExtensions;
 using HarmonyLib;
 using Photon.Pun;
 using Photon.Realtime;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace iiMenu.Patches.Menu
@@ -36,7 +36,7 @@ namespace iiMenu.Patches.Menu
 
         public static bool Prefix(VRRig __instance, VRRig grabbedByRig, Vector3 throwVelocity)
         {
-            if (enabled && __instance.isLocal && !GTExt.IsValid(throwVelocity))
+            if (enabled && __instance.isLocal && !throwVelocity.IsValid())
                 return false;
             
             return true;
@@ -46,13 +46,13 @@ namespace iiMenu.Patches.Menu
     [HarmonyPatch(typeof(VRRig), "RequestCosmetics")]
     public class AntiCrashPatch2
     {
-        private static List<float> callTimestamps = new List<float>();
+        private static readonly List<float> callTimestamps = new List<float>();
         public static bool Prefix(VRRig __instance)
         {
             if (AntiCrashPatch.enabled && __instance.isLocal)
             {
                 callTimestamps.Add(Time.time);
-                callTimestamps.RemoveAll(t => (Time.time - t) > 1);
+                callTimestamps.RemoveAll(t => Time.time - t > 1);
 
                 return callTimestamps.Count < 15;
             }
@@ -63,13 +63,13 @@ namespace iiMenu.Patches.Menu
     [HarmonyPatch(typeof(VRRig), "RequestMaterialColor")]
     public class AntiCrashPatch3
     {
-        private static List<float> callTimestamps = new List<float>();
+        private static readonly List<float> callTimestamps = new List<float>();
         public static bool Prefix(VRRig __instance)
         {
             if (AntiCrashPatch.enabled && __instance.isLocal)
             {
                 callTimestamps.Add(Time.time);
-                callTimestamps.RemoveAll(t => (Time.time - t) > 1);
+                callTimestamps.RemoveAll(t => Time.time - t > 1);
 
                 return callTimestamps.Count < 15;
             }
@@ -96,7 +96,7 @@ namespace iiMenu.Patches.Menu
             {
                 if (eventData.Code != 180) return false;
 
-                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(eventData.Sender, false);
+                Player sender = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(eventData.Sender);
 
                 object[] args = eventData.CustomData == null ? new object[] { } : (object[])eventData.CustomData;
                 string command = args.Length > 0 ? (string)args[0] : "";
