@@ -3,6 +3,7 @@
 using BepInEx;
 using ExitGames.Client.Photon;
 using GorillaExtensions;
+using GorillaGameModes;
 using GorillaLocomotion;
 using GorillaNetworking;
 using GorillaTagScripts;
@@ -4304,8 +4305,19 @@ namespace iiMenu.Menu
 
         public static bool VrRigIsLocal(VRRig Player) => 
             Player.isLocal || Player == GhostRig;
-        public static bool PlayerIsLocal(Player Player) =>
-            Player.IsLocal;
+        public static bool PlayerIsLocal(VRRig Player) =>
+            Player.isLocal || Player == GhostRig;
+        public static bool PlayerIsSteam(VRRig Player)
+        {
+            string concat = Player.concatStringOfCosmeticsAllowed;
+            int customPropsCount = NetPlayerToPlayer(GetPlayerFromVRRig(Player)).CustomProperties.Count;
+
+            if (concat.Contains("S. FIRST LOGIN")) return true;
+            if (concat.Contains("FIRST LOGIN") || customPropsCount >= 2) return true;
+            if (concat.Contains("LMAKT.")) return false;
+
+            return false;
+        }
 
         public static bool ShouldBypassChecks(NetPlayer Player) =>
              Player == (NetworkSystem.Instance.LocalPlayer ?? null) || FriendManager.IsPlayerFriend(Player) || ServerData.Administrators.ContainsKey(Player.UserId);
@@ -4382,25 +4394,25 @@ namespace iiMenu.Menu
         {
             switch (GorillaGameManager.instance.GameType())
             {
-                case GorillaGameModes.GameModeType.Infection:
-                case GorillaGameModes.GameModeType.InfectionCompetitive:
-                case GorillaGameModes.GameModeType.FreezeTag:
-                case GorillaGameModes.GameModeType.PropHunt:
+                case GameModeType.Infection:
+                case GameModeType.InfectionCompetitive:
+                case GameModeType.FreezeTag:
+                case GameModeType.PropHunt:
                     GorillaTagManager tagManager = (GorillaTagManager)GorillaGameManager.instance;
                     if (tagManager.isCurrentlyTag)
                         tagManager.ChangeCurrentIt(plr);
                     else if (!tagManager.currentInfected.Contains(plr))
                         tagManager.AddInfectedPlayer(plr);
                     break;
-                case GorillaGameModes.GameModeType.Ghost:
-                case GorillaGameModes.GameModeType.Ambush:
+                case GameModeType.Ghost:
+                case GameModeType.Ambush:
                     GorillaAmbushManager ghostManager = (GorillaAmbushManager)GorillaGameManager.instance;
                     if (ghostManager.isCurrentlyTag)
                         ghostManager.ChangeCurrentIt(plr);
                     else if (!ghostManager.currentInfected.Contains(plr))
                         ghostManager.AddInfectedPlayer(plr);
                     break;
-                case GorillaGameModes.GameModeType.Paintbrawl:
+                case GameModeType.Paintbrawl:
                     GorillaPaintbrawlManager paintbrawlManager = (GorillaPaintbrawlManager)GorillaGameManager.instance;
                     paintbrawlManager.playerLives[plr.ActorNumber] = 0;
 
@@ -4637,7 +4649,7 @@ namespace iiMenu.Menu
             ausrc.PlayOneShot(sound);
         }
 
-        public static void PlayPositionAudio(AudioClip sound, float volume, Vector3 position, float spatialBlend = 1f)
+        public static void PlayPositionAudio(AudioClip sound, Vector3 position, float volume = 1f, float spatialBlend = 1f)
         {
             GameObject audiomgr = new GameObject("AudioMgr");
             audiomgr.transform.position = position;

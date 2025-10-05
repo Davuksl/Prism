@@ -102,7 +102,7 @@ namespace iiMenu.Mods
             }
             else
                 RemoveInfected(PhotonNetwork.LocalPlayer);
-            
+
             GTPlayer.Instance.disableMovement = false;
         }
 
@@ -114,7 +114,8 @@ namespace iiMenu.Mods
                 {
                     if (!ReportTagPatch.invinciblePlayers.Contains(NetworkSystem.Instance.LocalPlayer))
                         ReportTagPatch.invinciblePlayers.Add(NetworkSystem.Instance.LocalPlayer);
-                } else
+                }
+                else
                 {
                     if (PlayerIsTagged(VRRig.LocalRig))
                         UntagSelf();
@@ -241,7 +242,8 @@ namespace iiMenu.Mods
 
                             ReportTagPatch.blacklistedPlayers.Add(GetPlayerFromVRRig(gunTarget));
 
-                        } else
+                        }
+                        else
                             NotifiLib.SendNotification("<color=grey>[</color><color=red>ERROR</color><color=grey>]</color> <color=white>You are not master client.</color>");
                     }
                 }
@@ -333,7 +335,7 @@ namespace iiMenu.Mods
                 tagAuraIndex = names.Length - 1;
 
             tagAuraDistance = distances[tagAuraIndex];
-            GetIndex("ctaRange").overlapText = "Change Tag Aura Range <color=grey>[</color><color=green>"+names[tagAuraIndex]+"</color><color=grey>]</color>";
+            GetIndex("ctaRange").overlapText = "Change Tag Aura Range <color=grey>[</color><color=green>" + names[tagAuraIndex] + "</color><color=grey>]</color>";
         }
 
         public static int tagRangeIndex;
@@ -633,7 +635,7 @@ namespace iiMenu.Mods
             {
                 foreach (Player v in PhotonNetwork.PlayerList)
                     AddInfected(v);
-                
+
                 GetIndex("Tag All").enabled = false;
                 NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> <color=white>Everyone is tagged!</color>");
             }
@@ -666,7 +668,7 @@ namespace iiMenu.Mods
                             else
                             {
                                 Vector3 position = vrrig.transform.position + RandomVector3();
-                                    
+
                                 VRRig.LocalRig.transform.position = position;
                                 VRRig.LocalRig.transform.rotation = RandomQuaternion();
 
@@ -834,7 +836,8 @@ namespace iiMenu.Mods
                     if (InfectedList().Count != PhotonNetwork.PlayerList.Length)
                         TagAll();
                 }
-            } else
+            }
+            else
                 VRRig.LocalRig.enabled = true;
         }
 

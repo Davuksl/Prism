@@ -39,6 +39,7 @@ using UnityEngine;
 using static iiMenu.Menu.Main;
 using Console = iiMenu.Classes.Menu.Console;
 using Random = UnityEngine.Random;
+using VelocityPatch = iiMenu.Patches.Menu.VelocityPatch;
 
 namespace iiMenu.Menu
 {
@@ -906,7 +907,7 @@ namespace iiMenu.Menu
 
                 new ButtonInfo { buttonText = "Free Camera <color=grey>[</color><color=green>J</color><color=grey>]</color>", method = Fun.Freecam, disableMethod = Fun.DisableFreecam, toolTip = "Exit your own body and fly around to your free will."},
                 new ButtonInfo { buttonText = "Third Person Camera", method = Fun.ThirdPersonCamera, disableMethod = Fun.DisableFreecam, toolTip = "Moves your camera to behind your head."},
-                new ButtonInfo { buttonText = "Flip Camera", method = Fun.FlipCamera, disableMethod = Fun.DisableFreecam, toolTip = "Flips your camera 180 degrees."},
+                //new ButtonInfo { buttonText = "Flip Camera", method = Fun.FlipCamera, disableMethod = Fun.DisableFreecam, toolTip = "Flips your camera 180 degrees."},
                 new ButtonInfo { buttonText = "Spectate Gun", method = Fun.SpectateGun, disableMethod = Fun.DisableFreecam, toolTip = "Lets you see through the eyes of whoever your hand desires."},
 
                 new ButtonInfo { buttonText = "Nausea", method = Fun.Nausea, disableMethod = Fun.DisableFreecam, toolTip = "Gives you the Nausea effect from Minecraft."},
@@ -997,10 +998,10 @@ namespace iiMenu.Menu
                 new ButtonInfo { buttonText = "Anti Grab", enableMethod =() => GrabPatch.enabled = true, disableMethod =() => GrabPatch.enabled = false, toolTip = "Prevents players from picking you up in guardian."},
                 new ButtonInfo { buttonText = "Anti Knockback", enableMethod =() => KnockbackPatch.enabled = true, disableMethod =() => KnockbackPatch.enabled = false, toolTip = "Prevents players from knocking you back with snowballs."},
 
-                new ButtonInfo { buttonText = "Fast Throw", method =() => { VelocityPatch.enabled = true; VelocityPatch.multipleFactor = 10f; }, disableMethod =() => VelocityPatch.enabled = false, toolTip = "Multiplies your throw factor by 10."},
+                new ButtonInfo { buttonText = "Fast Throw", method =() => { Patches.Menu.VelocityPatch.enabled = true; VelocityPatch.multipleFactor = 10f; }, disableMethod =() => VelocityPatch.enabled = false, toolTip = "Multiplies your throw factor by 10."},
                 new ButtonInfo { buttonText = "Slow Throw", method =() => { VelocityPatch.enabled = true; VelocityPatch.multipleFactor = 0.1f; }, disableMethod =() => VelocityPatch.enabled = false, toolTip = "Multiplies your throw factor by 0.1."},
 
-                new ButtonInfo { buttonText = "Angry Birds", enableMethod =() => GetLaunchPatch.angryBirds = true, method = Fun.AngryBirdsSounds, disableMethod =() => GetLaunchPatch.angryBirds = false, toolTip = "Flings you in whatever direction your slingshot's projectiles are heading."},
+                //new ButtonInfo { buttonText = "Angry Birds", enableMethod =() => GetLaunchPatch.angryBirds = true, method = Fun.AngryBirdsSounds, disableMethod =() => GetLaunchPatch.angryBirds = false, toolTip = "Flings you in whatever direction your slingshot's projectiles are heading."},
                 new ButtonInfo { buttonText = "Paintbrawl Aimbot", overlapText = "Slingshot Aimbot", enableMethod =() => GetLaunchPatch.enabled = true, method = Fun.DebugSlingshotAimbot, disableMethod =() => GetLaunchPatch.enabled = false, toolTip = "Redirects your slingshot to the closest nearby players."},
                 new ButtonInfo { buttonText = "Slingshot Helper", method = Fun.SlingshotHelper, toolTip = "Helps you grab the small paintball on your slingshot."},
                 new ButtonInfo { buttonText = "Slingshot Trigger Bot", method = Fun.SlingshotTriggerBot, toolTip = "Releases the small paintball on your slingshot when hovering over another player."},

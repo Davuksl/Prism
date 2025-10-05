@@ -31,7 +31,7 @@ namespace iiMenu.Extensions
     public static class VRRigExtensions
     {
         public static bool IsLocal(this VRRig rig) =>
-            VrRigIsLocal(rig);
+            PlayerIsLocal(rig);
 
         public static bool IsTagged(this VRRig rig) =>
             PlayerIsTagged(rig);
@@ -50,7 +50,7 @@ namespace iiMenu.Extensions
 
         public static float Distance(this VRRig rig, VRRig otherRig) =>
             rig.Distance(otherRig.transform.position);
-        
+
         public static float Distance(this VRRig rig) =>
             rig.Distance(GorillaTagger.Instance.bodyCollider.transform.position);
 

@@ -109,7 +109,7 @@ namespace iiMenu.Mods
                         .Select(name => VRKeyboard.transform.Find(name))
                         .Where(t => t != null)
                         .SelectMany(t => t.Children())
-                        .Select(t => t.gameObject); 
+                        .Select(t => t.gameObject);
 
                     foreach (GameObject v in keys)
                     {
@@ -380,7 +380,8 @@ namespace iiMenu.Mods
                         string PluginName = File.Replace($"{PluginInfo.BaseDirectory}/Plugins/", "");
                         LoadedPlugins.Add(PluginName, GetAssembly(File));
                     }
-                } catch (Exception e) { LogManager.Log("Error with loading plugin " + File + ": " + e); }
+                }
+                catch (Exception e) { LogManager.Log("Error with loading plugin " + File + ": " + e); }
             }
 
             foreach (KeyValuePair<string, Assembly> Plugin in LoadedPlugins)
@@ -435,7 +436,7 @@ namespace iiMenu.Mods
                 {
                     index++;
                     string[] Data = plugin.Split(";");
-                    pluginbuttons.Add(new ButtonInfo { buttonText = "PluginDownload" + index, overlapText = Data[0], method =() => DownloadPlugin(Data[0], Data[2]), isTogglable = false, toolTip = Data[1] });
+                    pluginbuttons.Add(new ButtonInfo { buttonText = "PluginDownload" + index, overlapText = Data[0], method = () => DownloadPlugin(Data[0], Data[2]), isTogglable = false, toolTip = Data[1] });
                 }
             }
             Buttons.buttons[GetCategory("Sound Library")] = pluginbuttons.ToArray();
@@ -464,7 +465,8 @@ namespace iiMenu.Mods
             {
                 disabledPlugins.Remove(Plugin.Key);
                 EnablePlugin(Plugin.Value);
-            } else
+            }
+            else
             {
                 disabledPlugins.Add(Plugin.Key);
                 DisablePlugin(Plugin.Value);
@@ -483,13 +485,13 @@ namespace iiMenu.Mods
         {
             currentCategoryName = "Players";
 
-            List<ButtonInfo> buttons = new List<ButtonInfo> { 
-                new ButtonInfo { 
-                    buttonText = "Exit Players", 
-                    method =() => currentCategoryName = "Main", 
-                    isTogglable = false, 
-                    toolTip = "Returns you back to the main page." 
-                } 
+            List<ButtonInfo> buttons = new List<ButtonInfo> {
+                new ButtonInfo {
+                    buttonText = "Exit Players",
+                    method =() => currentCategoryName = "Main",
+                    isTogglable = false,
+                    toolTip = "Returns you back to the main page."
+                }
             };
 
             if (!PhotonNetwork.InRoom)
@@ -510,7 +512,7 @@ namespace iiMenu.Mods
                     {
                         buttonText = $"PlayerButton{i}",
                         overlapText = $"<color={playerColor}>" + player.NickName + "</color>",
-                        method =() => NavigatePlayer(player),
+                        method = () => NavigatePlayer(player),
                         isTogglable = false,
                         toolTip = $"See information on the player {player.NickName}."
                     });
@@ -892,7 +894,7 @@ exit";
         {
             watchMenu = true;
             GameObject mainwatch = GetObject("Player Objects/Local VRRig/Local Gorilla Player/GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.L/upper_arm.L/forearm.L/hand.L/huntcomputer (1)");
-            watchobject = Object.Instantiate(mainwatch, 
+            watchobject = Object.Instantiate(mainwatch,
                 rightHand ?
                 GetObject("Player Objects/Local VRRig/Local Gorilla Player/GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.R/upper_arm.R/forearm.R/hand.R").transform :
                 GetObject("Player Objects/Local VRRig/Local Gorilla Player/GorillaPlayerNetworkedRigAnchor/rig/body/shoulder.L/upper_arm.L/forearm.L/hand.L").transform, false);
@@ -998,9 +1000,9 @@ exit";
         // I know there's better ways to do this. Trust me.
         public static void ChangeMenuTheme(bool increment = true)
         {
-            if (increment) 
-                themeType++; 
-            else 
+            if (increment)
+                themeType++;
+            else
                 themeType--;
 
             const int themeCount = 65;
@@ -3712,7 +3714,7 @@ exit";
         {
             if (!File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_CustomThemeColor.txt"))
                 UpdateWriteCustomTheme();
-            
+
             UpdateReadCustomTheme();
         }
 
@@ -4006,7 +4008,7 @@ exit";
 
             if (File.Exists($"{PluginInfo.BaseDirectory}/MenuBG.png"))
                 File.Delete($"{PluginInfo.BaseDirectory}/MenuBG.png");
-            
+
             doCustomMenuBackground = true;
             customMenuBackgroundImage = LoadTextureFromURL(File.ReadAllText($"{PluginInfo.BaseDirectory}/iiMenu_CustomMenuBackground.txt"), "MenuBG.png");
             ReloadMenu();
@@ -4073,7 +4075,8 @@ exit";
             if (fontCycle < 0)
                 fontCycle = 12;
 
-            switch (fontCycle) {
+            switch (fontCycle)
+            {
                 case 0:
                     activeFont = AgencyFB;
                     return;
@@ -4413,7 +4416,8 @@ exit";
                 else
                     GorillaTagger.Instance.rigidbody.transform.position = closePosition;
                 GorillaTagger.Instance.rigidbody.linearVelocity = new Vector3(0f, 0f, 0f);
-            } else
+            }
+            else
                 closePosition = Vector3.zero;
         }
 
@@ -4465,9 +4469,11 @@ exit";
 
         public static void DisablePageButtons()
         {
-            if (GetIndex("Joystick Menu").enabled) {
+            if (GetIndex("Joystick Menu").enabled)
+            {
                 disablePageButtons = true;
-            } else
+            }
+            else
             {
                 GetIndex("Disable Page Buttons").enabled = false;
                 NotifiLib.SendNotification("<color=grey>[</color><color=red>DISABLE</color><color=grey>]</color> <color=white>Disable Page Buttons can only be used when using Joystick Menu.</color>");
@@ -4479,7 +4485,7 @@ exit";
             doCustomName = true;
             if (!File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_CustomMenuName.txt"))
                 File.WriteAllText($"{PluginInfo.BaseDirectory}/iiMenu_CustomMenuName.txt", "Your Text Here");
-            
+
             customMenuName = File.ReadAllText($"{PluginInfo.BaseDirectory}/iiMenu_CustomMenuName.txt");
         }
 
@@ -4501,7 +4507,7 @@ exit";
 
             if (!GetIndex("Chain Voice Commands").enabled)
                 timeoutCoroutine = CoroutineManager.RunCoroutine(Timeout(string.Empty));
-            
+
             List<string> rawbuttonnames = cancelKeywords.ToList();
 
             foreach (ButtonInfo[] buttonlist in Buttons.buttons)
@@ -4523,7 +4529,7 @@ exit";
 
             if (dynamicSounds)
                 Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/select.ogg", "Audio/Menu/select.ogg"), buttonClickVolume / 10f);
-            
+
             NotifiLib.SendNotification("<color=grey>[</color><color=purple>VOICE</color><color=grey>]</color> Listening...", 3000);
         }
 
@@ -4564,7 +4570,8 @@ exit";
                     {
                         modTarget = v.buttonText;
                         exactMatch = true;
-                    } else
+                    }
+                    else
                     {
                         if (args.text.Contains(buttonName.ToLower()))
                             modTarget = v.buttonText;
@@ -4575,14 +4582,15 @@ exit";
             if (modTarget != null)
             {
                 ButtonInfo mod = GetIndex(modTarget);
-                NotifiLib.SendNotification("<color=grey>[</color><color=" + (mod.enabled ? "red" : "green") + ">VOICE</color><color=grey>]</color> " + (mod.enabled ? "Disabling " : "Enabling ") + (mod.overlapText ?? mod.buttonText) +"...", 3000);
+                NotifiLib.SendNotification("<color=grey>[</color><color=" + (mod.enabled ? "red" : "green") + ">VOICE</color><color=grey>]</color> " + (mod.enabled ? "Disabling " : "Enabling ") + (mod.overlapText ?? mod.buttonText) + "...", 3000);
                 if (dynamicSounds)
                     Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/confirm.ogg", "Audio/Menu/confirm.ogg"), buttonClickVolume / 10f);
-                
+
                 Toggle(modTarget, true, true);
-            } else
+            }
+            else
             {
-                NotifiLib.SendNotification("<color=grey>[</color><color=red>VOICE</color><color=grey>]</color> No command found ("+args.text+").", 3000);
+                NotifiLib.SendNotification("<color=grey>[</color><color=red>VOICE</color><color=grey>]</color> No command found (" + args.text + ").", 3000);
                 if (dynamicSounds)
                     Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/close.ogg", "Audio/Menu/close.ogg"), buttonClickVolume / 10f);
             }
@@ -4601,8 +4609,9 @@ exit";
             try
             {
                 CoroutineManager.EndCoroutine(timeoutCoroutine);
-            } catch { }
-            
+            }
+            catch { }
+
             NotifiLib.SendNotification($"<color=grey>[</color><color=red>VOICE</color><color=grey>]</color> {(text == "i hate you" ? "I hate you too." : "Cancelling...")}", 3000);
             if (dynamicSounds)
                 Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/close.ogg", "Audio/Menu/close.ogg"), buttonClickVolume / 10f);
@@ -4611,9 +4620,9 @@ exit";
         public static void VoiceRecognitionOff()
         {
             mainPhrases?.Stop();
-            
+
             modPhrases?.Stop();
-            
+
             mainPhrases = null;
             modPhrases = null;
         }
@@ -4698,7 +4707,8 @@ exit";
                     }
 
                     lastTriggerSelect = trigger;
-                } else
+                }
+                else
                 {
                     if (lastTarget != null)
                     {
@@ -4709,7 +4719,8 @@ exit";
                         lastTarget = null;
                     }
                 }
-            } else
+            }
+            else
             {
                 if (selectObject != null)
                 {
@@ -5078,7 +5089,8 @@ exit";
                         ModBindings[BindName] = Binds;
                     }
                 }
-            } catch { }
+            }
+            catch { }
 
             try
             {
@@ -5089,7 +5101,8 @@ exit";
                     if (button != null)
                         quickActions.Add(quickAction);
                 }
-            } catch { }
+            }
+            catch { }
 
             hasLoadedPreferences = true;
         }
@@ -5106,7 +5119,8 @@ exit";
 
                 string text = File.ReadAllText($"{PluginInfo.BaseDirectory}/iiMenu_Preferences.txt");
                 LoadPreferencesFromText(text);
-            } catch (Exception e) { LogManager.Log("Error loading preferences: " + e.Message); }
+            }
+            catch (Exception e) { LogManager.Log("Error loading preferences: " + e.Message); }
         }
 
         public static void Panic()
@@ -5261,7 +5275,8 @@ exit";
                     temp.ScreenBG_AbandonPartyAndSoloJoin = screenRed;
                     temp.ScreenBG_AlreadyInRoom = screenBlack;
                     temp.ScreenBG_Error = screenRed;
-                } catch { }
+                }
+                catch { }
             }
 
             disableBoardColor = true;
