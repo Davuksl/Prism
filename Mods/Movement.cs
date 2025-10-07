@@ -1618,7 +1618,8 @@ namespace iiMenu.Mods
             {
                 new ButtonInfo { buttonText = "Record <color=grey>[</color><color=green>T</color><color=grey>]</color>", method = RecordMacro, toolTip = "Record your macros with your <color=green>left trigger</color>." },
                 new ButtonInfo { buttonText = "Open Macros Folder", method = OpenMacrosFolder, isTogglable = false, toolTip = "Opens the folder in which your plugins are located." },
-                new ButtonInfo { buttonText = "Reload Macros", method = LoadMacros, isTogglable = false, toolTip = "Reloads your macros." }
+                new ButtonInfo { buttonText = "Reload Macros", method = LoadMacros, isTogglable = false, toolTip = "Reloads your macros." },
+                new ButtonInfo { buttonText = "Disable Macros", enableMethod =() => Movement.disableMacros = true, disableMethod =() => Movement.disableMacros = false, toolTip = "Disables all macros." }
             });
             Buttons.buttons[42] = buttons.ToArray();
         }
@@ -1663,6 +1664,9 @@ namespace iiMenu.Mods
                     positionDelay = Time.time + macroStepDuration;
                     recordingData.Add(PlayerPosition.CurrentPosition());
                 }
+
+                if (recordingMacro && recordingData.Count > 0)
+                    VisualizePlayerPosition(recordingData[0], Color.green);
             } else
             {
                 if (recordingMacro)
@@ -1753,7 +1757,7 @@ namespace iiMenu.Mods
                 else
                     RemovePosition(Color.cyan);
 
-                VisualizePositionCoroutine(positions[^1], Color.green);
+                VisualizePositionCoroutine(positions[^1], Color.red);
             }
 
             StopMacro();
@@ -1771,7 +1775,7 @@ namespace iiMenu.Mods
             NotifiLib.information.Remove("Macro");
 
             RemovePosition(Color.cyan);
-            RemovePosition(Color.green);
+            RemovePosition(Color.red);
         }
 
         public static void VisualizePlayerPosition(PlayerPosition position, Color color, float alpha = 0.15f)
@@ -1813,8 +1817,12 @@ namespace iiMenu.Mods
         public static bool midpointMacros;
         public static bool didMacro;
         public static bool directionBased;
+        public static bool disableMacros;
         public static void ExecuteMacroButton(Macro macro)
         {
+            if (disableMacros)
+                return;
+            
             didMacro = midpointMacros && (didMacro
                 ? rightTrigger >= 0.5f
                 : activeMacro != null);
@@ -2432,6 +2440,13 @@ namespace iiMenu.Mods
                 Toggle("Uncap Max Velocity");
             else
                 GTPlayer.Instance.jumpMultiplier = 99999f;
+        }
+
+        public static Playspace playspace;
+        public static void DisableVelocityCap()
+        {
+            playspace = GetAllType<Playspace>().FirstOrDefault();
+            playspace.enabled = false;
         }
 
         public static void UpdateClipColliders(bool enabled)

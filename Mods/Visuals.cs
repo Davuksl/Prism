@@ -1291,15 +1291,15 @@ namespace iiMenu.Mods
             FPSnametags.Clear();
         }
         
-        private static readonly Dictionary<VRRig, GameObject> IDnametags = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> idNameTags = new Dictionary<VRRig, GameObject>();
         public static void IDTags()
         {
-            foreach (KeyValuePair<VRRig, GameObject> nametag in IDnametags)
+            foreach (KeyValuePair<VRRig, GameObject> nametag in idNameTags)
             {
                 if (!GorillaParent.instance.vrrigs.Contains(nametag.Key))
                 {
                     Object.Destroy(nametag.Value);
-                    IDnametags.Remove(nametag.Key);
+                    idNameTags.Remove(nametag.Key);
                 }
             }
 
@@ -1309,7 +1309,7 @@ namespace iiMenu.Mods
                 {
                     if (!vrrig.isLocal)
                     {
-                        if (!IDnametags.ContainsKey(vrrig))
+                        if (!idNameTags.ContainsKey(vrrig))
                         {
                             GameObject go = new GameObject("iiMenu_IDtag");
                             go.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
@@ -1319,11 +1319,11 @@ namespace iiMenu.Mods
                             textMesh.anchor = TextAnchor.MiddleCenter;
                             textMesh.alignment = TextAlignment.Center;
 
-                            IDnametags.Add(vrrig, go);
+                            idNameTags.Add(vrrig, go);
                         }
                         
 
-                        GameObject nameTag = IDnametags[vrrig];
+                        GameObject nameTag = idNameTags[vrrig];
                         nameTag.GetComponent<TextMesh>().text = GetPlayerFromVRRig(vrrig).UserId;
                         nameTag.GetComponent<TextMesh>().color = GetPlayerColor(vrrig);
                         nameTag.GetComponent<TextMesh>().fontStyle = activeFontStyle;
@@ -1340,10 +1340,10 @@ namespace iiMenu.Mods
 
         public static void DisableIDTags()
         {
-            foreach (KeyValuePair<VRRig, GameObject> nametag in IDnametags)
+            foreach (KeyValuePair<VRRig, GameObject> nametag in idNameTags)
                 Object.Destroy(nametag.Value);
 
-            IDnametags.Clear();
+            idNameTags.Clear();
         }
 
         private static readonly Dictionary<VRRig, GameObject> platformTags = new Dictionary<VRRig, GameObject>();
@@ -1456,15 +1456,15 @@ namespace iiMenu.Mods
             creationDateTags.Clear();
         }
 
-        private static readonly Dictionary<VRRig, GameObject> Pingnametags = new Dictionary<VRRig, GameObject>();
+        private static readonly Dictionary<VRRig, GameObject> pingNameTags = new Dictionary<VRRig, GameObject>();
         public static void PingTags()
         {
-            foreach (KeyValuePair<VRRig, GameObject> nametag in Pingnametags)
+            foreach (KeyValuePair<VRRig, GameObject> nametag in pingNameTags)
             {
                 if (!GorillaParent.instance.vrrigs.Contains(nametag.Key))
                 {
                     Object.Destroy(nametag.Value);
-                    Pingnametags.Remove(nametag.Key);
+                    pingNameTags.Remove(nametag.Key);
                 }
             }
 
@@ -1474,7 +1474,7 @@ namespace iiMenu.Mods
                 {
                     if (!vrrig.isLocal)
                     {
-                        if (!Pingnametags.ContainsKey(vrrig))
+                        if (!pingNameTags.ContainsKey(vrrig))
                         {
                             GameObject go = new GameObject("iiMenu_Pingtag");
                             go.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
@@ -1484,10 +1484,10 @@ namespace iiMenu.Mods
                             textMesh.anchor = TextAnchor.MiddleCenter;
                             textMesh.alignment = TextAlignment.Center;
 
-                            Pingnametags.Add(vrrig, go);
+                            pingNameTags.Add(vrrig, go);
                         }
 
-                        GameObject nameTag = Pingnametags[vrrig];
+                        GameObject nameTag = pingNameTags[vrrig];
                         nameTag.GetComponent<TextMesh>().text = $"{vrrig.GetPing().ToString()}ms";
                         nameTag.GetComponent<TextMesh>().color = GetPlayerColor(vrrig);
                         nameTag.GetComponent<TextMesh>().fontStyle = activeFontStyle;
@@ -1505,10 +1505,10 @@ namespace iiMenu.Mods
 
         public static void DisablePingTags()
         {
-            foreach (KeyValuePair<VRRig, GameObject> nametag in Pingnametags)
+            foreach (KeyValuePair<VRRig, GameObject> nametag in pingNameTags)
                 Object.Destroy(nametag.Value);
 
-            Pingnametags.Clear();
+            pingNameTags.Clear();
         }
 
         private static readonly Dictionary<VRRig, GameObject> turnNameTags = new Dictionary<VRRig, GameObject>();
@@ -2082,7 +2082,7 @@ namespace iiMenu.Mods
                     {
                         if (!crashedNameTags.ContainsKey(vrrig))
                         {
-                            double crashPower = Math.Abs(vrrig.velocityHistoryList[0].time * 1000 - PhotonNetwork.ServerTimestamp);
+                            int crashPower = vrrig.GetPing();
                             bool crashed = crashPower > 500;
 
                             if (crashed)
@@ -2136,10 +2136,10 @@ namespace iiMenu.Mods
 
         public static void DisableCrashedTags()
         {
-            foreach (KeyValuePair<VRRig, GameObject> nametag in modNameTags)
+            foreach (KeyValuePair<VRRig, GameObject> nametag in crashedNameTags)
                 Object.Destroy(nametag.Value);
 
-            modNameTags.Clear();
+            crashedNameTags.Clear();
         }
 
         public static void FixRigColors()

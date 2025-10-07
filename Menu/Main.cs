@@ -1,5 +1,24 @@
-// don't worry, your "Goldentrophy Software" isn't actual company
-// yes its on GPL-3 but its free license so not surprised
+/*
+ * ii's Stupid Menu  Menu/Main.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
+ * Copyright (C) 2025  Goldentrophy Software
+ * https://github.com/iiDk-the-actual/iis.Stupid.Menu
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 using BepInEx;
 using ExitGames.Client.Photon;
 using GorillaExtensions;
@@ -20,6 +39,7 @@ using iiMenu.Patches.Menu;
 using Photon.Pun;
 using Photon.Realtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -42,20 +62,25 @@ using UnityEngine.XR;
 using Valve.VR;
 using static iiMenu.Managers.RigManager;
 using Button = iiMenu.Classes.Menu.Button;
+using CommonUsages = UnityEngine.XR.CommonUsages;
 using Console = iiMenu.Classes.Menu.Console;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
+using JoinType = GorillaNetworking.JoinType;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 /*
  * ii's Stupid Menu, written by @goldentrophy
  * Any comments are developer comments I wrote
  * Most comments are used to find certain parts of code faster with Ctrl + F
  * Feel free to read them if you want
- *  
+ *
  * ii's Stupid Menu falls under the GPL-3.0 license
  * https://github.com/iiDk-the-actual/iis.Stupid.Menu
  *
  * If you want to support my, check out my Patreon: https://patreon.com/iiDk
  * Any support is appreciated, and it helps me make more free content for you all
-*/
+ */
 
 namespace iiMenu.Menu
 {
@@ -92,20 +117,20 @@ namespace iiMenu.Menu
                 }
                 else
                 {
-                    ControllerInputPoller.instance.leftControllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out leftJoystick);
-                    ControllerInputPoller.instance.rightControllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out rightJoystick);
+                    ControllerInputPoller.instance.leftControllerDevice.TryGetFeatureValue(CommonUsages.primary2DAxis, out leftJoystick);
+                    ControllerInputPoller.instance.rightControllerDevice.TryGetFeatureValue(CommonUsages.primary2DAxis, out rightJoystick);
 
-                    ControllerInputPoller.instance.leftControllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxisClick, out leftJoystickClick);
-                    ControllerInputPoller.instance.rightControllerDevice.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxisClick, out rightJoystickClick);
+                    ControllerInputPoller.instance.leftControllerDevice.TryGetFeatureValue(CommonUsages.primary2DAxisClick, out leftJoystickClick);
+                    ControllerInputPoller.instance.rightControllerDevice.TryGetFeatureValue(CommonUsages.primary2DAxisClick, out rightJoystickClick);
                 }
 
                 if (UnityInput.Current.GetKey(KeyCode.UpArrow) || UnityInput.Current.GetKey(KeyCode.DownArrow) || UnityInput.Current.GetKey(KeyCode.LeftArrow) || UnityInput.Current.GetKey(KeyCode.RightArrow))
                 {
-                    Vector2 Direction = new Vector2((UnityInput.Current.GetKey(KeyCode.RightArrow) ? 1f : 0f) + (UnityInput.Current.GetKey(KeyCode.LeftArrow) ? -1f : 0f), (UnityInput.Current.GetKey(KeyCode.UpArrow) ? 1f : 0f) + (UnityInput.Current.GetKey(KeyCode.DownArrow) ? -1f : 0f));
+                    Vector2 direction = new Vector2((UnityInput.Current.GetKey(KeyCode.RightArrow) ? 1f : 0f) + (UnityInput.Current.GetKey(KeyCode.LeftArrow) ? -1f : 0f), (UnityInput.Current.GetKey(KeyCode.UpArrow) ? 1f : 0f) + (UnityInput.Current.GetKey(KeyCode.DownArrow) ? -1f : 0f));
                     if (UnityInput.Current.GetKey(KeyCode.LeftAlt))
-                        rightJoystick = Direction;
+                        rightJoystick = direction;
                     else
-                        leftJoystick = Direction;
+                        leftJoystick = direction;
                 }
 
                 if (UnityInput.Current.GetKey(KeyCode.Return))
@@ -115,6 +140,17 @@ namespace iiMenu.Menu
                     else
                         leftJoystickClick = true;
                 }
+
+                shouldBePC = UnityInput.Current.GetKey(KeyCode.E)
+                            || UnityInput.Current.GetKey(KeyCode.R)
+                            || UnityInput.Current.GetKey(KeyCode.F)
+                            || UnityInput.Current.GetKey(KeyCode.G)
+                            || UnityInput.Current.GetKey(KeyCode.LeftBracket)
+                            || UnityInput.Current.GetKey(KeyCode.RightBracket)
+                            || UnityInput.Current.GetKey(KeyCode.Minus)
+                            || UnityInput.Current.GetKey(KeyCode.Equals)
+                            || Mouse.current.leftButton.isPressed
+                            || Mouse.current.rightButton.isPressed;
             }
             catch { }
             #endregion
@@ -164,9 +200,9 @@ namespace iiMenu.Menu
 
                 if (wristMenu)
                 {
-                    bool shouldOpen = Vector3.Distance(GorillaTagger.Instance.leftHandTransform.position - (GorillaTagger.Instance.leftHandTransform.forward * 0.1f), TrueRightHand().position) < 0.1f;
+                    bool shouldOpen = Vector3.Distance(GorillaTagger.Instance.leftHandTransform.position - GorillaTagger.Instance.leftHandTransform.forward * 0.1f, TrueRightHand().position) < 0.1f;
                     if (rightHand)
-                        shouldOpen = Vector3.Distance(TrueLeftHand().position, GorillaTagger.Instance.rightHandTransform.position - (GorillaTagger.Instance.rightHandTransform.forward * 0.1f)) < 0.1f;
+                        shouldOpen = Vector3.Distance(TrueLeftHand().position, GorillaTagger.Instance.rightHandTransform.position - GorillaTagger.Instance.rightHandTransform.forward * 0.1f) < 0.1f;
 
                     if (shouldOpen && !lastChecker)
                         wristOpen = !wristOpen;
@@ -206,12 +242,14 @@ namespace iiMenu.Menu
                     buttonCondition = isKeyboardCondition;
 
                 isMenuButtonHeld = buttonCondition;
-                if (buttonCondition && menu == null)
-                    OpenMenu();
-                else
+                switch (buttonCondition)
                 {
-                    if (!buttonCondition && menu != null)
+                    case true when menu == null:
+                        OpenMenu();
+                        break;
+                    case false when menu != null:
                         CloseMenu();
+                        break;
                 }
 
                 if (buttonCondition && menu != null)
@@ -236,19 +274,15 @@ namespace iiMenu.Menu
                         for (int i = 0; i < GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom").transform.childCount; i++)
                         {
                             GameObject v = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom").transform.GetChild(i).gameObject;
-                            if (v.name.Contains("UnityTempFile"))
-                            {
-                                stumpBoardIndex++;
-                                if (stumpBoardIndex == StumpLeaderboardIndex)
-                                {
-                                    foundStumpBoard = true;
-                                    if (StumpMat == null)
-                                        StumpMat = v.GetComponent<Renderer>().material;
+                            if (!v.name.Contains("UnityTempFile")) continue;
+                            stumpBoardIndex++;
+                            if (stumpBoardIndex != StumpLeaderboardIndex) continue;
+                            foundStumpBoard = true;
+                            if (StumpMat == null)
+                                StumpMat = v.GetComponent<Renderer>().material;
 
-                                    v.GetComponent<Renderer>().material = OrangeUI;
-                                    break;
-                                }
-                            }
+                            v.GetComponent<Renderer>().material = OrangeUI;
+                            break;
                         }
 
                         bool foundForestBoard = false;
@@ -256,19 +290,15 @@ namespace iiMenu.Menu
                         for (int i = 0; i < GetObject("Environment Objects/LocalObjects_Prefab/Forest").transform.childCount; i++)
                         {
                             GameObject v = GetObject("Environment Objects/LocalObjects_Prefab/Forest").transform.GetChild(i).gameObject;
-                            if (v.name.Contains("UnityTempFile"))
-                            {
-                                forestBoardIndex++;
-                                if (forestBoardIndex == ForestLeaderboardIndex)
-                                {
-                                    foundForestBoard = true;
-                                    if (ForestMat == null)
-                                        ForestMat = v.GetComponent<Renderer>().material;
+                            if (!v.name.Contains("UnityTempFile")) continue;
+                            forestBoardIndex++;
+                            if (forestBoardIndex != ForestLeaderboardIndex) continue;
+                            foundForestBoard = true;
+                            if (ForestMat == null)
+                                ForestMat = v.GetComponent<Renderer>().material;
 
-                                    v.GetComponent<Renderer>().material = OrangeUI;
-                                    break;
-                                }
-                            }
+                            v.GetComponent<Renderer>().material = OrangeUI;
+                            break;
                         }
 
                         if (foundStumpBoard && foundForestBoard)
@@ -297,8 +327,7 @@ namespace iiMenu.Menu
                             }
                             PhotonNetworkController.Instance.UpdateTriggerScreens();
 
-                            string[] objectsWithTMPro = new string[]
-                            {
+                            string[] objectsWithTMPro = {
                                 "Environment Objects/LocalObjects_Prefab/TreeRoom/CodeOfConductHeadingText",
                                 "Environment Objects/LocalObjects_Prefab/TreeRoom/COCBodyText_TitleData",
                                 "Environment Objects/LocalObjects_Prefab/TreeRoom/Data",
@@ -321,12 +350,11 @@ namespace iiMenu.Menu
                             for (int i = 0; i < forestTransform.transform.childCount; i++)
                             {
                                 GameObject v = forestTransform.GetChild(i).gameObject;
-                                if ((v.name.Contains("Board Text") || v.name.Contains("Scoreboard_OfflineText")) && v.activeSelf)
-                                {
-                                    TextMeshPro text = v.GetComponent<TextMeshPro>();
-                                    if (!udTMP.Contains(text))
-                                        udTMP.Add(text);
-                                }
+                                if ((!v.name.Contains("Board Text") && !v.name.Contains("Scoreboard_OfflineText")) ||
+                                    !v.activeSelf) continue;
+                                TextMeshPro text = v.GetComponent<TextMeshPro>();
+                                if (!udTMP.Contains(text))
+                                    udTMP.Add(text);
                             }
 
                             hasFoundAllBoards = true;
@@ -359,28 +387,28 @@ namespace iiMenu.Menu
                         motdObject.SetActive(false);
                     }
 
-                    TextMeshPro motdTC = motd.GetComponent<TextMeshPro>();
-                    if (!udTMP.Contains(motdTC))
-                        udTMP.Add(motdTC);
+                    TextMeshPro motdTc = motd.GetComponent<TextMeshPro>();
+                    if (!udTMP.Contains(motdTc))
+                        udTMP.Add(motdTc);
 
-                    motdTC.richText = true;
-                    motdTC.fontSize = 70;
-                    motdTC.text = "Thanks for using Prism!";
+                    motdTc.richText = true;
+                    motdTc.fontSize = 70;
+                    motdTc.text = "Thanks for using ii's Stupid Menu!";
 
                     if (doCustomName)
-                        motdTC.text = "Thanks for using " + NoRichtextTags(customMenuName) + "!";
+                        motdTc.text = "Thanks for using " + NoRichtextTags(customMenuName) + "!";
 
                     if (translate)
-                        motdTC.text = TranslateText(motdTC.text);
+                        motdTc.text = TranslateText(motdTc.text);
 
                     if (lowercaseMode)
-                        motdTC.text = motdTC.text.ToLower();
+                        motdTc.text = motdTc.text.ToLower();
 
                     if (uppercaseMode)
-                        motdTC.text = motdTC.text.ToUpper();
+                        motdTc.text = motdTc.text.ToUpper();
 
-                    motdTC.color = textColors[0].GetCurrentColor();
-                    motdTC.overflowMode = TextOverflowModes.Overflow;
+                    motdTc.color = textColors[0].GetCurrentColor();
+                    motdTc.overflowMode = TextOverflowModes.Overflow;
 
                     if (motdText == null)
                     {
@@ -399,12 +427,7 @@ namespace iiMenu.Menu
                     motdTextB.fontSize = 100;
                     motdTextB.color = textColors[0].GetCurrentColor();
 
-                    if (fullModAmount < 0)
-                    {
-                        fullModAmount = 0;
-                        foreach (ButtonInfo[] buttons in Buttons.buttons)
-                            fullModAmount += buttons.Length;
-                    }
+                    fullModAmount ??= Buttons.buttons.SelectMany(list => list).ToArray().Length;
 
                     motdTextB.text = string.Format(motdTemplate, PluginInfo.Version, fullModAmount);
 
@@ -431,7 +454,7 @@ namespace iiMenu.Menu
                 #endregion
 
                 #region PC Search Keyboard
-                if (inTextInput)
+                if (inTextInput && isKeyboardPc)
                 {
                     List<KeyCode> keysPressed = new List<KeyCode>();
                     foreach (KeyCode keyCode in detectedKeyCodes)
@@ -452,52 +475,69 @@ namespace iiMenu.Menu
 
                             keysPressed.Add(keyCode);
 
-                            if (!lastPressedKeys.Contains(keyCode))
+                            if (lastPressedKeys.Contains(keyCode)) continue;
+                            if (UnityInput.Current.GetKey(KeyCode.LeftControl))
                             {
-                                if (UnityInput.Current.GetKey(KeyCode.LeftControl))
+                                switch (keyCode)
                                 {
-                                    switch (keyCode)
-                                    {
-                                        case KeyCode.A:
-                                            keyboardInput = "";
-                                            break;
-                                        case KeyCode.C:
-                                            GUIUtility.systemCopyBuffer = keyboardInput;
-                                            break;
-                                        case KeyCode.V:
-                                            keyboardInput = GUIUtility.systemCopyBuffer;
-                                            break;
-                                        case KeyCode.Backspace:
-                                            if (keyboardInput.Length > 0)
-                                                keyboardInput = string.Join(" ", keyboardInput.Split(' ').SkipLast(1));
-                                            break;
-                                    }
+                                    case KeyCode.A:
+                                        keyboardInput = "";
+                                        break;
+                                    case KeyCode.C:
+                                        GUIUtility.systemCopyBuffer = keyboardInput;
+                                        break;
+                                    case KeyCode.V:
+                                        keyboardInput += GUIUtility.systemCopyBuffer;
+                                        break;
+                                    case KeyCode.Backspace:
+                                        keyboardInput = keyboardInput[..^1];
+                                        break;
                                 }
-                                else
+                            }
+                            else
+                            {
+                                switch (keyCode)
                                 {
-                                    switch (keyCode)
-                                    {
-                                        case KeyCode.Backspace:
-                                            if (keyboardInput.Length > 0)
-                                                keyboardInput = keyboardInput[..^1];
-                                            break;
-                                        case KeyCode.Escape:
-                                            if (isSearching)
-                                                Toggle("Search");
-                                            else
-                                                Toggle("Decline Prompt");
+                                    case KeyCode.Backspace:
+                                        if (keyboardInput.Length > 0)
+                                            keyboardInput = keyboardInput[..^1];
+                                        break;
+                                    case KeyCode.Escape:
+                                        Toggle(isSearching ? "Search" : "Decline Prompt");
 
-                                            break;
-                                        case KeyCode.Return:
-                                            if (isSearching)
+                                        break;
+                                    case KeyCode.Return:
+                                        if (isSearching)
+                                        {
+                                            List<ButtonInfo> searchedMods = new List<ButtonInfo>();
+                                            if (nonGlobalSearch && currentCategoryName != "Main")
                                             {
-                                                List<ButtonInfo> searchedMods = new List<ButtonInfo>();
-                                                if (nonGlobalSearch && currentCategoryName != "Main")
+                                                foreach (ButtonInfo v in Buttons.buttons[currentCategoryIndex])
                                                 {
-                                                    foreach (ButtonInfo v in Buttons.buttons[currentCategoryIndex])
+                                                    try
+                                                    {
+                                                        string buttonText = v.buttonText;
+                                                        if (v.overlapText != null)
+                                                            buttonText = v.overlapText;
+
+                                                        if (buttonText.ClearTags().Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
+                                                            searchedMods.Add(v);
+                                                    }
+                                                    catch { }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                int categoryIndex = 0;
+                                                foreach (ButtonInfo[] buttonInfos in Buttons.buttons)
+                                                {
+                                                    foreach (ButtonInfo v in buttonInfos)
                                                     {
                                                         try
                                                         {
+                                                            if ((Buttons.categoryNames[categoryIndex].Contains("Admin") || Buttons.categoryNames[categoryIndex] == "Mod Givers") && !isAdmin)
+                                                                continue;
+
                                                             string buttonText = v.buttonText;
                                                             if (v.overlapText != null)
                                                                 buttonText = v.overlapText;
@@ -507,58 +547,35 @@ namespace iiMenu.Menu
                                                         }
                                                         catch { }
                                                     }
+                                                    categoryIndex++;
                                                 }
-                                                else
-                                                {
-                                                    int categoryIndex = 0;
-                                                    foreach (ButtonInfo[] buttonlist in Buttons.buttons)
-                                                    {
-                                                        foreach (ButtonInfo v in buttonlist)
-                                                        {
-                                                            try
-                                                            {
-                                                                if ((Buttons.categoryNames[categoryIndex].Contains("Admin") || Buttons.categoryNames[categoryIndex] == "Mod Givers") && !isAdmin)
-                                                                    continue;
-
-                                                                string buttonText = v.buttonText;
-                                                                if (v.overlapText != null)
-                                                                    buttonText = v.overlapText;
-
-                                                                if (buttonText.Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
-                                                                    searchedMods.Add(v);
-                                                            }
-                                                            catch { }
-                                                        }
-                                                        categoryIndex++;
-                                                    }
-                                                }
-
-                                                ButtonInfo[] buttons = StringsToInfos(Alphabetize(InfosToStrings(searchedMods.ToArray())));
-                                                ButtonInfo button = buttons[0];
-
-                                                if (button.incremental)
-                                                    ToggleIncremental(button.buttonText, UnityInput.Current.GetKey(KeyCode.LeftShift));
-                                                else
-                                                    Toggle(buttons[0].buttonText, true);
                                             }
-                                            else if (IsText)
-                                                Toggle("Accept Prompt");
 
-                                            break;
-                                        default:
-                                            keyboardInput +=
-                                                UnityInput.Current.GetKey(KeyCode.LeftShift) || UnityInput.Current.GetKey(KeyCode.RightShift) ?
+                                            ButtonInfo[] buttons = StringsToInfos(Alphabetize(InfosToStrings(searchedMods.ToArray())));
+                                            ButtonInfo button = buttons[0];
+
+                                            if (button.incremental)
+                                                ToggleIncremental(button.buttonText, UnityInput.Current.GetKey(KeyCode.LeftShift));
+                                            else
+                                                Toggle(buttons[0].buttonText, true);
+                                        }
+                                        else if (IsText)
+                                            Toggle("Accept Prompt");
+
+                                        break;
+                                    default:
+                                        keyboardInput +=
+                                            UnityInput.Current.GetKey(KeyCode.LeftShift) || UnityInput.Current.GetKey(KeyCode.RightShift) ?
                                                 keyCode.ToString().Capitalize() : keyCode.Key().ToLower();
-                                            break;
-                                    }
+                                        break;
                                 }
-
-                                VRRig.LocalRig.PlayHandTapLocal(66, false, buttonClickVolume / 10f);
-                                pageNumber = 0;
-                                ReloadMenu();
                             }
+
+                            VRRig.LocalRig.PlayHandTapLocal(66, false, buttonClickVolume / 10f);
+                            pageNumber = 0;
+                            ReloadMenu();
                         }
-                        else if (keyPressedTimes.ContainsKey(keyCode))
+                        else
                             keyPressedTimes.Remove(keyCode);
                     }
 
@@ -607,7 +624,7 @@ namespace iiMenu.Menu
                     string textToSet = ftCount ? $"FT: {Mathf.Floor(1f / lastDeltaTime * 10000f) / 10f} ms" : $"FPS: {lastDeltaTime}";
                     if (hidetitle && !noPageNumber) textToSet += "      ";
                     if (disableFpsCounter) textToSet = "";
-                    if (hidetitle && !noPageNumber) textToSet += "Page " + (pageNumber + 1).ToString();
+                    if (hidetitle && !noPageNumber) textToSet += "Page " + (pageNumber + 1);
 
                     fpsCount.text = textToSet;
                     if (lowercaseMode)
@@ -619,17 +636,14 @@ namespace iiMenu.Menu
 
                 if (animatedTitle && title != null)
                 {
-                    string targetString = doCustomName ? NoRichtextTags(customMenuName) : "Prism";
+                    string targetString = doCustomName ? NoRichtextTags(customMenuName) : "ii's Stupid Menu";
                     int length = (int)Mathf.PingPong(Time.time / 0.25f, targetString.Length);
-                    if (length > 0)
-                        title.text = targetString[..length];
-                    else
-                        title.text = "";
+                    title.text = length > 0 ? targetString[..length] : "";
                 }
 
                 if (gradientTitle && title != null)
                     title.text = RichtextGradient(NoRichtextTags(title.text),
-                        new GradientColorKey[]
+                        new[]
                         {
                             new GradientColorKey(BrightenColor(buttonColors[0].GetColor(0)), 0f),
                             new GradientColorKey(BrightenColor(buttonColors[0].GetColor(0), 0.95f), 0.5f),
@@ -638,7 +652,7 @@ namespace iiMenu.Menu
 
                 if (keyboardInputObject != null)
                 {
-                    keyboardInputObject.text = keyboardInput + (((Time.frameCount / 45) % 2) == 0 ? "|" : " ");
+                    keyboardInputObject.text = keyboardInput + (Time.frameCount / 45 % 2 == 0 ? "|" : " ");
 
                     if (lowercaseMode)
                         keyboardInputObject.text = keyboardInputObject.text.ToLower();
@@ -723,23 +737,23 @@ namespace iiMenu.Menu
                             {
                                 AudioSource audioSource = SwapGunHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                                 audioSource.volume = buttonClickVolume / 10f;
-                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/grip-press.wav", "grip-press.wav"));
+                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/grip-press.ogg", "Audio/Guns/grip-press.ogg"));
                             }
 
                             if (GetGunInput(true) && (!lastGunTrigger || (audiomgrhand != null && !audiomgrhand.GetComponent<AudioSource>().isPlaying)))
                             {
                                 AudioSource audioSource = SwapGunHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                                 audioSource.volume = buttonClickVolume / 10f;
-                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/trigger-press.wav", "trigger-press.wav"));
+                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/trigger-press.ogg", "Audio/Guns/trigger-press.ogg"));
 
-                                PlayHandAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/trigger-hold.wav", "trigger-hold.wav"), buttonClickVolume / 10f, SwapGunHand);
+                                PlayHandAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/trigger-hold.ogg", "Audio/Guns/trigger-hold.ogg"), buttonClickVolume / 10f, SwapGunHand);
                             }
 
                             if (!GetGunInput(true) && lastGunTrigger)
                             {
                                 AudioSource audioSource = SwapGunHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                                 audioSource.volume = buttonClickVolume / 10f;
-                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/trigger-release.wav", "trigger-release.wav"));
+                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/trigger-release.ogg", "Audio/Guns/trigger-release.ogg"));
 
                                 audiomgrhand?.GetComponent<AudioSource>().Stop();
                             }
@@ -750,7 +764,7 @@ namespace iiMenu.Menu
                             {
                                 AudioSource audioSource = SwapGunHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                                 audioSource.volume = buttonClickVolume / 10f;
-                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/grip-release.wav", "grip-release.wav"));
+                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/grip-release.ogg", "Audio/Guns/grip-release.ogg"));
                             }
 
                             if (audiomgrhand != null && audiomgrhand.GetComponent<AudioSource>().isPlaying)
@@ -759,7 +773,7 @@ namespace iiMenu.Menu
 
                                 AudioSource audioSource = SwapGunHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                                 audioSource.volume = buttonClickVolume / 10f;
-                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/trigger-release.wav", "trigger-release.wav"));
+                                audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Guns/trigger-release.ogg", "Audio/Guns/trigger-release.ogg"));
                             }
                         }
 
@@ -798,12 +812,12 @@ namespace iiMenu.Menu
                 if (annoyingMode)
                 {
                     OrangeUI.color = new Color32(226, 74, 44, 255);
-                    int randy = UnityEngine.Random.Range(1, 400);
+                    int randy = Random.Range(1, 400);
                     if (randy == 21)
                     {
                         VRRig.LocalRig.PlayHandTapLocal(84, true, 0.4f);
                         VRRig.LocalRig.PlayHandTapLocal(84, false, 0.4f);
-                        NotifiLib.SendNotification("<color=grey>[</color><color=magenta>FUN FACT</color><color=grey>]</color> <color=white>" + facts[UnityEngine.Random.Range(0, facts.Length - 1)] + "</color>");
+                        NotifiLib.SendNotification("<color=grey>[</color><color=magenta>FUN FACT</color><color=grey>]</color> <color=white>" + facts[Random.Range(0, facts.Length - 1)] + "</color>");
                     }
                 }
 
@@ -834,7 +848,7 @@ namespace iiMenu.Menu
                         partyLastCode = null;
                         phaseTwo = false;
                         NotifiLib.ClearAllNotifications();
-                        NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> <color=white>Successfully " + (waitForPlayerJoin ? "banned" : "kicked") + " " + amountPartying.ToString() + " party member!</color>");
+                        NotifiLib.SendNotification("<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> <color=white>Successfully " + (waitForPlayerJoin ? "banned" : "kicked") + " " + amountPartying + " party member!</color>");
                         FriendshipGroupDetection.Instance.LeaveParty();
                     }
                     else
@@ -854,7 +868,7 @@ namespace iiMenu.Menu
                         if (partyLastCode != null && Time.time > partyTime && (!waitForPlayerJoin || PhotonNetwork.PlayerListOthers.Length > 0))
                         {
                             LogManager.Log("Attempting rejoin");
-                            PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(partyLastCode, GorillaNetworking.JoinType.Solo);
+                            PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(partyLastCode, JoinType.Solo);
                             partyTime = Time.time + Important.reconnectDelay;
                         }
                     }
@@ -917,8 +931,16 @@ namespace iiMenu.Menu
                 {
                     if (!legacyGhostview && GhostRig == null)
                     {
-                        GhostRig = Instantiate(VRRig.LocalRig, GTPlayer.Instance.transform.position, GTPlayer.Instance.transform.rotation);
+                        GameObject ghostRigHolder = new GameObject("ghostRigHolder");
+                        ghostRigHolder.SetActive(false);
+
+                        GhostRig = Instantiate(VRRig.LocalRig, GTPlayer.Instance.transform.position, GTPlayer.Instance.transform.rotation, ghostRigHolder.transform);
                         GhostRig.headBodyOffset = Vector3.zero;
+
+                        GhostRig.gameObject.SetActive(false);
+                        GhostRig.transform.SetParent(VRRig.LocalRig.transform.parent);
+
+                        Destroy(ghostRigHolder);
 
                         GhostRig.transform.Find("VR Constraints/LeftArm/Left Arm IK/SlideAudio").gameObject.SetActive(false);
                         GhostRig.transform.Find("VR Constraints/RightArm/Right Arm IK/SlideAudio").gameObject.SetActive(false);
@@ -926,10 +948,8 @@ namespace iiMenu.Menu
                         GhostRig.GetComponent<OwnershipGaurd>().enabled = false; 
                             
                         Visuals.FixRigMaterialESPColors(GhostRig);
-                            
-                        GhostRig.mainSkin.enabled = false;
-                        GhostRig.enabled = false;
-                        GhostRig.transform.position = new Vector3(99999f, 99999f, 99999f);
+
+                        GhostRig.transform.position = Vector3.one * float.MaxValue;
                     }
 
                     if (GhostMaterial == null)
@@ -957,11 +977,10 @@ namespace iiMenu.Menu
 
                         if (legacyGhostview)
                         {
-                            if (GhostRig.enabled)
+                            if (GhostRig.gameObject.activeSelf)
                             {
-                                GhostRig.mainSkin.enabled = false;
-                                GhostRig.enabled = false;
-                                GhostRig.transform.position = new Vector3(99999f, 99999f, 99999f);
+                                GhostRig.gameObject.SetActive(false);
+                                GhostRig.transform.position = Vector3.one * float.MaxValue;
                             }
 
                             legacyGhostViewLeft.SetActive(true);
@@ -974,8 +993,7 @@ namespace iiMenu.Menu
                         }
                         else
                         {
-                            GhostRig.enabled = true;
-                            GhostRig.mainSkin.enabled = true;
+                            GhostRig.gameObject.SetActive(true);
 
                             Color ghm = color;
                             ghm.a = 0.5f;
@@ -986,12 +1004,10 @@ namespace iiMenu.Menu
                     }
                     else
                     {
-                        GhostRig.mainSkin.enabled = false;
-                        GhostRig.enabled = false;
-                        GhostRig.transform.position = new Vector3(99999f, 99999f, 99999f);
+                        GhostRig.gameObject.SetActive(false);
+                        GhostRig.transform.position = Vector3.one * float.MaxValue;
 
                         legacyGhostViewLeft.SetActive(false);
-
                         legacyGhostViewRight.SetActive(false);
                     }
                 }
@@ -1012,61 +1028,37 @@ namespace iiMenu.Menu
                     {
                         foreach (string id in muteIDs)
                         {
-                            if (!mutedIDs.Contains(id))
+                            if (mutedIDs.Contains(id)) continue;
+                            string randomName = "gorilla";
+                            for (var i = 0; i < 4; i++)
+                                randomName += Random.Range(0, 9).ToString();
+
+                            object[] content = {
+                                id,
+                                true,
+                                randomName,
+                                NetworkSystem.Instance.LocalPlayer.NickName,
+                                true,
+                                NetworkSystem.Instance.RoomStringStripped()
+                            };
+
+                            PhotonNetwork.RaiseEvent(51, content, new RaiseEventOptions
                             {
-                                string randomName = "gorilla";
-                                for (var i = 0; i < 4; i++)
-                                    randomName += UnityEngine.Random.Range(0, 9).ToString();
+                                TargetActors = new[] { -1 },
+                                Receivers = ReceiverGroup.All,
+                                Flags = new WebFlags(1)
+                            }, SendOptions.SendReliable);
 
-                                object[] content = new object[] {
-                                    id,
-                                    true,
-                                    randomName,
-                                    NetworkSystem.Instance.LocalPlayer.NickName,
-                                    true,
-                                    NetworkSystem.Instance.RoomStringStripped()
-                                };
-
-                                PhotonNetwork.RaiseEvent(51, content, new RaiseEventOptions
-                                {
-                                    TargetActors = new int[] { -1 },
-                                    Receivers = ReceiverGroup.All,
-                                    Flags = new WebFlags(1)
-                                }, SendOptions.SendReliable);
-
-                                mutedIDs.Add(id);
-                            }
+                            mutedIDs.Add(id);
                         }
                     }
                 }
                 catch { }
 
-                if (ServerPos == Vector3.zero)
-                    ServerPos = ServerSyncPos;
-                else
-                    ServerPos = Vector3.Lerp(ServerPos, VRRig.LocalRig.SanitizeVector3(ServerSyncPos), VRRig.LocalRig.lerpValueBody * 0.66f);
-
-                if (ServerLeftHandPos == Vector3.zero)
-                    ServerLeftHandPos = ServerSyncLeftHandPos;
-                else
-                    ServerLeftHandPos = Vector3.Lerp(ServerLeftHandPos, VRRig.LocalRig.SanitizeVector3(ServerSyncLeftHandPos), VRRig.LocalRig.lerpValueBody);
-
-                if (ServerRightHandPos == Vector3.zero)
-                    ServerRightHandPos = ServerSyncRightHandPos;
-                else
-                    ServerRightHandPos = Vector3.Lerp(ServerRightHandPos, VRRig.LocalRig.SanitizeVector3(ServerSyncRightHandPos), VRRig.LocalRig.lerpValueBody);
+                ServerPos = ServerPos == Vector3.zero ? ServerSyncPos : Vector3.Lerp(ServerPos, VRRig.LocalRig.SanitizeVector3(ServerSyncPos), VRRig.LocalRig.lerpValueBody * 0.66f);
+                ServerLeftHandPos = ServerLeftHandPos == Vector3.zero ? ServerSyncLeftHandPos : Vector3.Lerp(ServerLeftHandPos, VRRig.LocalRig.SanitizeVector3(ServerSyncLeftHandPos), VRRig.LocalRig.lerpValueBody);
+                ServerRightHandPos = ServerRightHandPos == Vector3.zero ? ServerSyncRightHandPos : Vector3.Lerp(ServerRightHandPos, VRRig.LocalRig.SanitizeVector3(ServerSyncRightHandPos), VRRig.LocalRig.lerpValueBody);
                 #endregion
-
-                shouldBePC = UnityInput.Current.GetKey(KeyCode.E) 
-                            || UnityInput.Current.GetKey(KeyCode.R)
-                            || UnityInput.Current.GetKey(KeyCode.F)
-                            || UnityInput.Current.GetKey(KeyCode.G)
-                            || UnityInput.Current.GetKey(KeyCode.LeftBracket)
-                            || UnityInput.Current.GetKey(KeyCode.RightBracket)
-                            || UnityInput.Current.GetKey(KeyCode.Minus)
-                            || UnityInput.Current.GetKey(KeyCode.Equals)
-                            || Mouse.current.leftButton.isPressed
-                            || Mouse.current.rightButton.isPressed;
 
                 #region Menu Navigation Features
                 if (menu != null)
@@ -1088,7 +1080,7 @@ namespace iiMenu.Menu
                             if (nextButton)
                             {
                                 pageButtonChangeDelay = Time.time + 0.2f;
-                                PlayButtonSound("NextPage", true, false);
+                                PlayButtonSound("NextPage", true);
                                 Toggle("NextPage");
                             }
                         }
@@ -1113,7 +1105,7 @@ namespace iiMenu.Menu
                             if (js.x > 0.5f)
                             {
                                 if (dynamicSounds)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/next.wav", "next.wav"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/next.ogg", "Audio/Menu/next.ogg"), buttonClickVolume / 10f);
 
                                 Toggle("NextPage");
                                 joystickDelay = Time.time + 0.2f;
@@ -1121,7 +1113,7 @@ namespace iiMenu.Menu
                             if (js.x < -0.5f)
                             {
                                 if (dynamicSounds)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/prev.wav", "prev.wav"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/prev.ogg", "Audio/Menu/prev.ogg"), buttonClickVolume / 10f);
 
                                 Toggle("PreviousPage");
                                 joystickDelay = Time.time + 0.2f;
@@ -1130,7 +1122,7 @@ namespace iiMenu.Menu
                             if (js.y > 0.5f)
                             {
                                 if (dynamicSounds)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/open.wav", "up.wav"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/open.ogg", "Audio/Menu/up.ogg"), buttonClickVolume / 10f);
 
                                 joystickButtonSelected--;
                                 if (joystickButtonSelected < 0)
@@ -1142,7 +1134,7 @@ namespace iiMenu.Menu
                             if (js.y < -0.5f)
                             {
                                 if (dynamicSounds)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/close.wav", "down.wav"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/close.ogg", "Audio/Menu/down.ogg"), buttonClickVolume / 10f);
 
                                 joystickButtonSelected++;
                                 joystickButtonSelected %= lastPage;
@@ -1154,9 +1146,13 @@ namespace iiMenu.Menu
                             if (leftJoystickClick)
                             {
                                 if (dynamicSounds)
-                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/select.wav", "select.wav"), buttonClickVolume / 10f);
+                                    Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/select.ogg", "Audio/Menu/select.ogg"), buttonClickVolume / 10f);
 
-                                Toggle(joystickSelectedButton, true);
+                                ButtonInfo button = GetIndex(joystickSelectedButton);
+                                if (button.incremental)
+                                    ToggleIncremental(joystickSelectedButton, leftTrigger < 0.5f);
+                                else
+                                    Toggle(joystickSelectedButton, true);
                                 ReloadMenu();
                                 joystickDelay = Time.time + 0.2f;
                             }
@@ -1176,13 +1172,13 @@ namespace iiMenu.Menu
 
                         if (currentCategoryName == "Enabled Mods")
                         {
-                            List<ButtonInfo> enabledMods = new List<ButtonInfo>() { };
+                            List<ButtonInfo> enabledMods = new List<ButtonInfo>();
                             int categoryIndex = 0;
                             foreach (ButtonInfo[] buttonlist in Buttons.buttons)
                             {
                                 foreach (ButtonInfo v in buttonlist)
                                 {
-                                    if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")))
+                                    if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")) && (!hideMacros || !Buttons.categoryNames[categoryIndex].Contains("Macro")))
                                         enabledMods.Add(v);
                                 }
                                 categoryIndex++;
@@ -1198,7 +1194,7 @@ namespace iiMenu.Menu
                         if (toSortOf[watchMenuIndex].overlapText != null)
                             watchTextText.text = toSortOf[watchMenuIndex].overlapText;
 
-                        watchTextText.text += $"\n<color=grey>[{(watchMenuIndex + 1)}/{toSortOf.Length}]\n{DateTime.Now:hh:mm tt}</color>";
+                        watchTextText.text += $"\n<color=grey>[{watchMenuIndex + 1}/{toSortOf.Length}]\n{DateTime.Now:hh:mm tt}</color>";
                         watchTextText.color = textColors[0].GetCurrentColor();
 
                         if (lowercaseMode)
@@ -1216,7 +1212,7 @@ namespace iiMenu.Menu
                         Vector2 js = rightHand ? rightJoystick : leftJoystick;
                         if (Time.time > wristMenuDelay)
                         {
-                            if (js.x > 0.5f || (rightHand ? (js.y < -0.5f) : (js.y > 0.5f)))
+                            if (js.x > 0.5f || (rightHand ? js.y < -0.5f : js.y > 0.5f))
                             {
                                 watchMenuIndex++;
                                 if (watchMenuIndex > toSortOf.Length - 1)
@@ -1224,7 +1220,7 @@ namespace iiMenu.Menu
 
                                 wristMenuDelay = Time.time + 0.2f;
                             }
-                            if (js.x < -0.5f || (rightHand ? (js.y > 0.5f) : (js.y < -0.5f)))
+                            if (js.x < -0.5f || (rightHand ? js.y > 0.5f : js.y < -0.5f))
                             {
                                 watchMenuIndex--;
                                 if (watchMenuIndex < 0)
@@ -1380,7 +1376,7 @@ namespace iiMenu.Menu
                         if (!Settings.disabledPlugins.Contains(Plugin.Key))
                             PluginUpdate(Plugin.Value);
                     }
-                    catch (Exception e) { LogManager.Log("Error with UPDATE plugin " + Plugin.Key + ": " + e.ToString()); }
+                    catch (Exception e) { LogManager.Log("Error with UPDATE plugin " + Plugin.Key + ": " + e); }
                 }
 
                 // Menu
@@ -1462,10 +1458,7 @@ namespace iiMenu.Menu
                 buttonObject.transform.parent = menu.transform;
                 buttonObject.transform.rotation = Quaternion.identity;
 
-                if (thinMenu)
-                    buttonObject.transform.localScale = new Vector3(0.09f, 0.9f, buttonDistance * 0.8f);
-                else
-                    buttonObject.transform.localScale = new Vector3(0.09f, 1.3f, buttonDistance * 0.8f);
+                buttonObject.transform.localScale = thinMenu ? new Vector3(0.09f, 0.9f, buttonDistance * 0.8f) : new Vector3(0.09f, 1.3f, buttonDistance * 0.8f);
 
                 if (longmenu && buttonIndex >= pageSize)
                 {
@@ -1481,10 +1474,7 @@ namespace iiMenu.Menu
                     // 0.08 x Y = 0.102
 
                     buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
-                    if (thinMenu)
-                        buttonObject.transform.localPosition = new Vector3(0.56f, 0.399f, 0.28f - offset);
-                    else
-                        buttonObject.transform.localPosition = new Vector3(0.56f, 0.599f, 0.28f - offset);
+                    buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.399f, 0.28f - offset) : new Vector3(0.56f, 0.599f, 0.28f - offset);
                 }
 
                 Button Button = buttonObject.AddComponent<Button>();
@@ -1525,10 +1515,13 @@ namespace iiMenu.Menu
                     {
                         joystickSelectedButton = method.buttonText;
 
-                        ExtGradient gradient = colorChanger.colors.Clone();
-                        gradient.SetColor(0, Color.red);
+                        if (themeType != 30)
+                        {
+                            ExtGradient gradient = colorChanger.colors.Clone();
+                            gradient.SetColor(0, Color.red);
 
-                        colorChanger.colors = gradient;
+                            colorChanger.colors = gradient;
+                        }
                     }
                 }
                 else
@@ -1615,10 +1608,7 @@ namespace iiMenu.Menu
             // Fat menu theorem
             // To get the fat position of a button:
             // original x * (0.7 / 0.45) or 1.555555556
-            if (thinMenu)
-                buttonObject.transform.localPosition = new Vector3(0.56f, -0.450f, -0.58f);
-            else
-                buttonObject.transform.localPosition = new Vector3(0.56f, -0.7f, -0.58f);
+            buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, -0.450f, -0.58f) : new Vector3(0.56f, -0.7f, -0.58f);
 
             buttonObject.AddComponent<Button>().relatedText = "Search";
 
@@ -1626,7 +1616,7 @@ namespace iiMenu.Menu
                 OutlineObj(buttonObject, isSearching ^ !swapButtonColors);
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
-            colorChanger.colors = buttonColors[(isSearching ^ !swapButtonColors) ? 0 : 1];
+            colorChanger.colors = buttonColors[isSearching ^ !swapButtonColors ? 0 : 1];
 
             if (joystickMenuSearching && joystickButtonSelected == pageSize)
             {
@@ -1649,7 +1639,7 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<Image>();
             if (searchIcon == null)
-                searchIcon = LoadTextureFromResource("iiMenu.Resources.search.png");
+                searchIcon = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.search.png");
 
             if (searchMat == null)
                 searchMat = new Material(searchImage.material);
@@ -1662,10 +1652,7 @@ namespace iiMenu.Menu
             imageTransform.localPosition = Vector3.zero;
             imageTransform.sizeDelta = new Vector2(.03f, .03f);
 
-            if (thinMenu)
-                imageTransform.localPosition = new Vector3(.064f, -0.35f / 2.6f, -0.58f / 2.6f);
-            else
-                imageTransform.localPosition = new Vector3(.064f, -0.54444444444f / 2.6f, -0.58f / 2.6f);
+            imageTransform.localPosition = thinMenu ? new Vector3(.064f, -0.35f / 2.6f, -0.58f / 2.6f) : new Vector3(.064f, -0.54444444444f / 2.6f, -0.58f / 2.6f);
 
             imageTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
 
@@ -1686,10 +1673,7 @@ namespace iiMenu.Menu
             buttonObject.transform.rotation = Quaternion.identity;
 
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
-            if (thinMenu)
-                buttonObject.transform.localPosition = new Vector3(0.56f, 0.450f, -0.58f);
-            else
-                buttonObject.transform.localPosition = new Vector3(0.56f, 0.7f, -0.58f);
+            buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
 
             buttonObject.AddComponent<Button>().relatedText = "Info Screen";
 
@@ -1697,7 +1681,7 @@ namespace iiMenu.Menu
                 OutlineObj(buttonObject, infoScreenEnabled ^ swapButtonColors);
 
             ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
-            colorChanger.colors = buttonColors[(infoScreenEnabled ^ swapButtonColors) ? 0 : 1];
+            colorChanger.colors = buttonColors[infoScreenEnabled ^ swapButtonColors ? 0 : 1];
 
             if (shouldRound)
                 RoundObj(buttonObject);
@@ -1710,7 +1694,7 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<Image>();
             if (debugIcon == null)
-                debugIcon = LoadTextureFromResource("iiMenu.Resources.debug.png");
+                debugIcon = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.debug.png");
 
             if (debugMat == null)
                 debugMat = new Material(searchImage.material);
@@ -1723,10 +1707,7 @@ namespace iiMenu.Menu
             imageTransform.localPosition = Vector3.zero;
             imageTransform.sizeDelta = new Vector2(.03f, .03f);
 
-            if (thinMenu)
-                imageTransform.localPosition = new Vector3(.064f, 0.35f / 2.6f, -0.58f / 2.6f);
-            else
-                imageTransform.localPosition = new Vector3(.064f, 0.54444444444f / 2.6f, -0.58f / 2.6f);
+            imageTransform.localPosition = thinMenu ? new Vector3(.064f, 0.35f / 2.6f, -0.58f / 2.6f) : new Vector3(.064f, 0.54444444444f / 2.6f, -0.58f / 2.6f);
 
             imageTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
 
@@ -1745,10 +1726,7 @@ namespace iiMenu.Menu
             buttonObject.transform.rotation = Quaternion.identity;
 
             buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
-            if (thinMenu)
-                buttonObject.transform.localPosition = new Vector3(0.56f, 0.450f, -0.58f);
-            else
-                buttonObject.transform.localPosition = new Vector3(0.56f, 0.7f, -0.58f);
+            buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
 
             buttonObject.AddComponent<Button>().relatedText = "Donate Button";
 
@@ -1769,7 +1747,7 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<Image>();
             if (donateIcon == null)
-                donateIcon = LoadTextureFromResource("iiMenu.Resources.donate.png");
+                donateIcon = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.donate.png");
 
             if (donateMat == null)
                 donateMat = new Material(searchImage.material);
@@ -1782,15 +1760,65 @@ namespace iiMenu.Menu
             imageTransform.localPosition = Vector3.zero;
             imageTransform.sizeDelta = new Vector2(.03f, .03f);
 
-            if (thinMenu)
-                imageTransform.localPosition = new Vector3(.064f, 0.35f / 2.6f, -0.58f / 2.6f);
-            else
-                imageTransform.localPosition = new Vector3(.064f, 0.54444444444f / 2.6f, -0.58f / 2.6f);
+            imageTransform.localPosition = thinMenu ? new Vector3(.064f, 0.35f / 2.6f, -0.58f / 2.6f) : new Vector3(.064f, 0.54444444444f / 2.6f, -0.58f / 2.6f);
 
             imageTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
 
             if (outlineText)
                 OutlineCanvasObject(searchImage, 3);
+        }
+
+        private static void AddUpdateButton()
+        {
+            GameObject buttonObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            if (!UnityInput.Current.GetKey(KeyCode.Q) && !isKeyboardPc)
+                buttonObject.layer = 2;
+
+            buttonObject.GetComponent<BoxCollider>().isTrigger = true;
+            buttonObject.transform.parent = menu.transform;
+            buttonObject.transform.rotation = Quaternion.identity;
+
+            buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, 0.08f);
+            buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.450f, -0.58f) : new Vector3(0.56f, 0.7f, -0.58f);
+
+            buttonObject.AddComponent<Button>().relatedText = "Update Button";
+
+            if (shouldOutline)
+                OutlineObj(buttonObject, !swapButtonColors);
+
+            ColorChanger colorChanger = buttonObject.AddComponent<ColorChanger>();
+            colorChanger.colors = buttonColors[swapButtonColors ? 1 : 0];
+
+            if (shouldRound)
+                RoundObj(buttonObject);
+
+            Image searchImage = new GameObject
+            {
+                transform =
+                {
+                    parent = canvasObj.transform
+                }
+            }.AddComponent<Image>();
+            if (updateIcon == null)
+                updateIcon = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.update.png");
+
+            if (updateMat == null)
+                updateMat = new Material(searchImage.material);
+
+            searchImage.material = updateMat;
+            searchImage.material.SetTexture("_MainTex", updateIcon);
+            searchImage.AddComponent<ImageColorChanger>().colors = textColors[1];
+
+            RectTransform imageTransform = searchImage.GetComponent<RectTransform>();
+            imageTransform.localPosition = Vector3.zero;
+            imageTransform.sizeDelta = new Vector2(.03f, .03f);
+
+            imageTransform.localPosition = thinMenu ? new Vector3(.064f, 0.35f / 2.6f, -0.58f / 2.6f) : new Vector3(.064f, 0.54444444444f / 2.6f, -0.58f / 2.6f);
+
+            imageTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
+
+            if (outlineText)
+                OutlineCanvasObject(searchImage, 4);
         }
 
         private static void AddReturnButton(bool offcenteredPosition)
@@ -1807,10 +1835,7 @@ namespace iiMenu.Menu
             // Fat menu theorem
             // To get the fat position of a button:
             // original x * (0.7 / 0.45) or 1.555555556
-            if (thinMenu)
-                buttonObject.transform.localPosition = new Vector3(0.56f, -0.450f, -0.58f);
-            else
-                buttonObject.transform.localPosition = new Vector3(0.56f, -0.7f, -0.58f);
+            buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, -0.450f, -0.58f) : new Vector3(0.56f, -0.7f, -0.58f);
 
             if (offcenteredPosition)
                 buttonObject.transform.localPosition += new Vector3(0f, 0.16f, 0f);
@@ -1840,7 +1865,7 @@ namespace iiMenu.Menu
             }.AddComponent<Image>();
 
             if (returnIcon == null)
-                returnIcon = LoadTextureFromResource("iiMenu.Resources.return.png");
+                returnIcon = LoadTextureFromResource($"{PluginInfo.ClientResourcePath}.return.png");
 
             if (returnMat == null)
                 returnMat = new Material(returnImage.material);
@@ -1853,10 +1878,7 @@ namespace iiMenu.Menu
             imageTransform.localPosition = Vector3.zero;
             imageTransform.sizeDelta = new Vector2(.03f, .03f);
 
-            if (thinMenu)
-                imageTransform.localPosition = new Vector3(.064f, -0.35f / 2.6f, -0.58f / 2.6f);
-            else
-                imageTransform.localPosition = new Vector3(.064f, -0.54444444444f / 2.6f, -0.58f / 2.6f);
+            imageTransform.localPosition = thinMenu ? new Vector3(.064f, -0.35f / 2.6f, -0.58f / 2.6f) : new Vector3(.064f, -0.54444444444f / 2.6f, -0.58f / 2.6f);
 
             if (offcenteredPosition)
                 imageTransform.localPosition += new Vector3(0f, 0.0475f, 0f);
@@ -1880,15 +1902,12 @@ namespace iiMenu.Menu
                 buttonObject.transform.rotation = Quaternion.identity;
 
                 buttonObject.transform.localScale = new Vector3(0.09f, 0.102f, buttonDistance * 0.8f);
-                if (thinMenu)
-                    buttonObject.transform.localPosition = new Vector3(0.56f, 0.399f, 0.28f - offset);
-                else
-                    buttonObject.transform.localPosition = new Vector3(0.56f, 0.599f, 0.28f - offset);
+                buttonObject.transform.localPosition = thinMenu ? new Vector3(0.56f, 0.399f, 0.28f - offset) : new Vector3(0.56f, 0.599f, 0.28f - offset);
 
-                Button Button = buttonObject.AddComponent<Button>();
-                Button.relatedText = method.buttonText;
-                Button.incremental = true;
-                Button.positive = increment;
+                Button button = buttonObject.AddComponent<Button>();
+                button.relatedText = method.buttonText;
+                button.incremental = true;
+                button.positive = increment;
 
                 if (increment)
                     buttonObject.transform.localPosition = new Vector3(buttonObject.transform.localPosition.x, -buttonObject.transform.localPosition.y, buttonObject.transform.localPosition.z);
@@ -1938,10 +1957,7 @@ namespace iiMenu.Menu
             if (NoAutoSizeText)
                 textTransform.sizeDelta = new Vector2(9f, 0.015f);
 
-            if (thinMenu)
-                textTransform.localPosition = new Vector3(.064f, increment ? -0.12f : 0.12f, .111f - offset / 2.6f);
-            else
-                textTransform.localPosition = new Vector3(.064f, increment ? -0.18f : 0.18f, .111f - offset / 2.6f);
+            textTransform.localPosition = thinMenu ? new Vector3(.064f, increment ? -0.12f : 0.12f, .111f - offset / 2.6f) : new Vector3(.064f, increment ? -0.18f : 0.18f, .111f - offset / 2.6f);
             textTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
 
             if (outlineText)
@@ -1976,7 +1992,7 @@ namespace iiMenu.Menu
 
             if (annoyingMode)
             {
-                menu.transform.localScale = new Vector3(0.1f, UnityEngine.Random.Range(10f, 40f) / 100f, 0.3825f);
+                menu.transform.localScale = new Vector3(0.1f, Random.Range(10f, 40f) / 100f, 0.3825f);
                 backgroundColor = new ExtGradient { colors = ExtGradient.GetSimpleGradient(RandomColor(), RandomColor()) };
 
                 buttonColors[0] = new ExtGradient { colors = ExtGradient.GetSimpleGradient(RandomColor(), RandomColor()) };
@@ -2005,10 +2021,7 @@ namespace iiMenu.Menu
                 menuBackground.transform.rotation = Quaternion.identity;
 
                 // Size is calculated in depth, width, height
-                if (thinMenu)
-                    menuBackground.transform.localScale = new Vector3(0.1f, 1f, 1f);
-                else
-                    menuBackground.transform.localScale = new Vector3(0.1f, 1.5f, 1f);
+                menuBackground.transform.localScale = thinMenu ? new Vector3(0.1f, 1f, 1f) : new Vector3(0.1f, 1.5f, 1f);
 
                 if (innerOutline || themeType == 34)
                 {
@@ -2067,7 +2080,7 @@ namespace iiMenu.Menu
                         case 25:
                             if (pride == null)
                             {
-                                pride = LoadTextureFromURL($"{PluginInfo.ResourceURL}/pride.png", "pride.png");
+                                pride = LoadTextureFromURL($"{PluginInfo.ServerResourcePath}/Images/Themes/pride.png", "Images/Themes/pride.png");
                                 pride.filterMode = FilterMode.Point;
                                 pride.wrapMode = TextureWrapMode.Clamp;
                             }
@@ -2078,7 +2091,7 @@ namespace iiMenu.Menu
                         case 26:
                             if (trans == null)
                             {
-                                trans = LoadTextureFromURL($"{PluginInfo.ResourceURL}/trans.png", "trans.png");
+                                trans = LoadTextureFromURL($"{PluginInfo.ServerResourcePath}/Images/Themes/trans.png", "Images/Themes/trans.png");
                                 trans.filterMode = FilterMode.Point;
                                 trans.wrapMode = TextureWrapMode.Clamp;
                             }
@@ -2089,7 +2102,7 @@ namespace iiMenu.Menu
                         case 27:
                             if (gay == null)
                             {
-                                gay = LoadTextureFromURL($"{PluginInfo.ResourceURL}/mlm.png", "mlm.png");
+                                gay = LoadTextureFromURL($"{PluginInfo.ServerResourcePath}/Images/Themes/mlm.png", "Images/Themes/mlm.png");
                                 gay.filterMode = FilterMode.Point;
                                 gay.wrapMode = TextureWrapMode.Clamp;
                             }
@@ -2103,7 +2116,7 @@ namespace iiMenu.Menu
                                 videoPlayer = new GameObject("iiMenu_VideoPlayer").AddComponent<VideoPlayer>();
                                 videoPlayer.playOnAwake = true;
                                 videoPlayer.isLooping = true;
-                                videoPlayer.url = $"{PluginInfo.ResourceURL}/badapple.mp4";
+                                videoPlayer.url = $"{PluginInfo.ServerResourcePath}/Videos/Themes/badapple.mp4";
 
                                 RenderTexture rt = new RenderTexture(192, 144, 0);
                                 rt.Create();
@@ -2157,15 +2170,14 @@ namespace iiMenu.Menu
                 }
             }.AddComponent<Text>();
             title.font = activeFont;
-            title.text = translate ? "Prism" : "Prism";
+            title.text = translate ? "ii's Stupid Menu" : "ii's <b>Stupid</b> Menu";
 
             if (doCustomName)
                 title.text = customMenuName;
 
             if (annoyingMode)
             {
-                string[] randomMenuNames = new string[]
-                {
+                string[] randomMenuNames = {
                     "ModderX",
                     "ShibaGT Gold",
                     "Kman Menu",
@@ -2180,8 +2192,8 @@ namespace iiMenu.Menu
                     "Unttile menu"
                 };
 
-                if (UnityEngine.Random.Range(1, 5) == 2)
-                    title.text = randomMenuNames[UnityEngine.Random.Range(0, randomMenuNames.Length - 1)] + " v" + UnityEngine.Random.Range(8, 159);
+                if (Random.Range(1, 5) == 2)
+                    title.text = randomMenuNames[Random.Range(0, randomMenuNames.Length - 1)] + " v" + Random.Range(8, 159);
             }
             if (translate)
                 title.text = TranslateText(title.text, output => ReloadMenu());
@@ -2200,7 +2212,7 @@ namespace iiMenu.Menu
 
             if (gradientTitle)
                 title.text = RichtextGradient(NoRichtextTags(title.text),
-                    new GradientColorKey[]
+                    new[]
                     {
                         new GradientColorKey(BrightenColor(buttonColors[0].GetColor(0)), 0f),
                         new GradientColorKey(BrightenColor(buttonColors[0].GetColor(0), 0.95f), 0.5f),
@@ -2209,12 +2221,9 @@ namespace iiMenu.Menu
 
             if (animatedTitle)
             {
-                string targetString = doCustomName ? NoRichtextTags(customMenuName) : "Prism";
+                string targetString = doCustomName ? NoRichtextTags(customMenuName) : "ii's Stupid Menu";
                 int length = (int)Mathf.PingPong(Time.time / 0.25f, targetString.Length);
-                if (length > 0)
-                    title.text = targetString[..length];
-                else
-                    title.text = "";
+                title.text = length > 0 ? targetString[..length] : "";
             }
 
             title.fontSize = 1;
@@ -2268,10 +2277,7 @@ namespace iiMenu.Menu
             component = buildLabel.GetComponent<RectTransform>();
             component.localPosition = Vector3.zero;
             component.sizeDelta = new Vector2(0.28f, 0.02f);
-            if (thinMenu)
-                component.position = new Vector3(0.04f, 0.0f, -0.17f);
-            else
-                component.position = new Vector3(0.04f, 0.07f, -0.17f);
+            component.position = thinMenu ? new Vector3(0.04f, 0.0f, -0.17f) : new Vector3(0.04f, 0.07f, -0.17f);
 
             component.rotation = Quaternion.Euler(new Vector3(0f, 90f, 90f));
 
@@ -2290,7 +2296,7 @@ namespace iiMenu.Menu
             string textToSet = ftCount ? $"FT: {Mathf.Floor(1f / lastDeltaTime * 10000f) / 10f} ms" : $"FPS: {lastDeltaTime}";
             if (hidetitle && !noPageNumber) textToSet += "      ";
             if (disableFpsCounter) textToSet = "";
-            if (hidetitle && !noPageNumber) textToSet += "Page " + (pageNumber + 1).ToString();
+            if (hidetitle && !noPageNumber) textToSet += "Page " + (pageNumber + 1);
 
             fps.text = textToSet;
             if (lowercaseMode)
@@ -2362,6 +2368,8 @@ namespace iiMenu.Menu
             {
                 if (!acceptedDonations)
                     AddDonateButton();
+                else if (ServerData.OutdatedVersion)
+                    AddUpdateButton();
             }
 
             if (!disablePageButtons && !IsPrompting)
@@ -2377,12 +2385,9 @@ namespace iiMenu.Menu
                 searchBoxObject.transform.parent = menu.transform;
                 searchBoxObject.transform.rotation = Quaternion.identity;
 
-                if (thinMenu)
-                    searchBoxObject.transform.localScale = new Vector3(0.09f, 0.9f, buttonDistance * 0.8f);
-                else
-                    searchBoxObject.transform.localScale = new Vector3(0.09f, 1.3f, buttonDistance * 0.8f);
+                searchBoxObject.transform.localScale = thinMenu ? new Vector3(0.09f, 0.9f, buttonDistance * 0.8f) : new Vector3(0.09f, 1.3f, buttonDistance * 0.8f);
 
-                searchBoxObject.transform.localPosition = new Vector3(0.56f, 0f, 0.28f - (buttonOffset * buttonDistance));
+                searchBoxObject.transform.localPosition = new Vector3(0.56f, 0f, 0.28f - buttonOffset * buttonDistance);
 
                 if (shouldOutline)
                     OutlineObj(searchBoxObject, true);
@@ -2402,7 +2407,7 @@ namespace iiMenu.Menu
                 }.AddComponent<Text>();
 
                 keyboardInputObject.font = activeFont;
-                keyboardInputObject.text = keyboardInput + (((Time.frameCount / 45) % 2) == 0 ? "|" : "");
+                keyboardInputObject.text = keyboardInput + ((Time.time % 1f) > 0.5f ? "|" : "");
                 if (lowercaseMode)
                     keyboardInputObject.text = keyboardInputObject.text.ToLower();
 
@@ -2441,7 +2446,7 @@ namespace iiMenu.Menu
             {
                 // Button render code
                 int buttonIndexOffset = 0;
-                ButtonInfo[] renderButtons = new ButtonInfo[] { };
+                ButtonInfo[] renderButtons = { };
 
                 try
                 {
@@ -2458,7 +2463,7 @@ namespace iiMenu.Menu
                                     if (v.overlapText != null)
                                         buttonText = v.overlapText;
 
-                                    if (buttonText.Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
+                                    if (buttonText.ClearTags().Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
                                         searchedMods.Add(v);
                                 }
                                 catch { }
@@ -2492,7 +2497,7 @@ namespace iiMenu.Menu
                         buttonIndexOffset += 1;
                         renderButtons = searchedMods.ToArray();
                     }
-                    else if (annoyingMode && UnityEngine.Random.Range(1, 5) == 3)
+                    else if (annoyingMode && Random.Range(1, 5) == 3)
                     {
                         ButtonInfo disconnectButton = GetIndex("Disconnect");
                         renderButtons = Enumerable.Repeat(disconnectButton, 15).ToArray();
@@ -2509,13 +2514,13 @@ namespace iiMenu.Menu
                     }
                     else if (currentCategoryName == "Enabled Mods")
                     {
-                        List<ButtonInfo> enabledMods = new List<ButtonInfo>() { };
+                        List<ButtonInfo> enabledMods = new List<ButtonInfo>();
                         int categoryIndex = 0;
                         foreach (ButtonInfo[] buttonlist in Buttons.buttons)
                         {
                             foreach (ButtonInfo v in buttonlist)
                             {
-                                if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")))
+                                if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")) && (!hideMacros || !Buttons.categoryNames[categoryIndex].Contains("Macro")))
                                     enabledMods.Add(v);
                             }
                             categoryIndex++;
@@ -2571,7 +2576,7 @@ namespace iiMenu.Menu
                         };
 
                         if (cann == null)
-                            cann = LoadTextureFromURL($"{PluginInfo.ResourceURL}/cannabis.png", "cannabis.png");
+                            cann = LoadTextureFromURL($"{PluginInfo.ServerResourcePath}/Images/Themes/cannabis.png", "cannabis.png");
 
                         cannmat.mainTexture = cann;
 
@@ -2587,8 +2592,8 @@ namespace iiMenu.Menu
 
                     Rigidbody comp = particle.AddComponent(typeof(Rigidbody)) as Rigidbody;
                     comp.position = menuBackground.transform.position;
-                    comp.linearVelocity = new Vector3(UnityEngine.Random.Range(-3f, 3f), UnityEngine.Random.Range(3f, 5f), UnityEngine.Random.Range(-3f, 3f));
-                    comp.angularVelocity = new Vector3(UnityEngine.Random.Range(-3f, 3f), UnityEngine.Random.Range(-3f, 3f), UnityEngine.Random.Range(-3f, 3f));
+                    comp.linearVelocity = new Vector3(Random.Range(-3f, 3f), Random.Range(3f, 5f), Random.Range(-3f, 3f));
+                    comp.angularVelocity = new Vector3(Random.Range(-3f, 3f), Random.Range(-3f, 3f), Random.Range(-3f, 3f));
                 }
             }
 
@@ -2601,7 +2606,7 @@ namespace iiMenu.Menu
             bool isKeyboardCondition = UnityInput.Current.GetKey(KeyCode.Q) || (inTextInput && isKeyboardPc);
             if (joystickMenu)
             {
-                menu.transform.position = GorillaTagger.Instance.headCollider.transform.position + GorillaTagger.Instance.headCollider.transform.forward + GorillaTagger.Instance.headCollider.transform.right * 0.3f + GorillaTagger.Instance.headCollider.transform.up * 0.2f;
+                menu.transform.position = GorillaTagger.Instance.headCollider.transform.TransformPoint(joystickMenuPositions[joystickMenuPosition]);
                 menu.transform.LookAt(GorillaTagger.Instance.headCollider.transform);
                 Vector3 rotModify = menu.transform.rotation.eulerAngles;
                 rotModify += new Vector3(-90f, 0f, -90f);
@@ -2613,7 +2618,7 @@ namespace iiMenu.Menu
                 {
                     if (oneHand)
                     {
-                        menu.transform.position = GorillaTagger.Instance.headCollider.transform.position + GorillaTagger.Instance.headCollider.transform.forward * 0.5f + GorillaTagger.Instance.headCollider.transform.up * -0.1f;
+                        menu.transform.position = GorillaTagger.Instance.headCollider.transform.TransformPoint(new Vector3(0f, -0.1f, 0.5f));
                         menu.transform.LookAt(GorillaTagger.Instance.headCollider.transform);
                         Vector3 rotModify = menu.transform.rotation.eulerAngles;
                         rotModify += new Vector3(-90f, 0f, -90f);
@@ -2632,19 +2637,6 @@ namespace iiMenu.Menu
                         {
                             menu.transform.position = GorillaTagger.Instance.leftHandTransform.position;
                             menu.transform.rotation = GorillaTagger.Instance.leftHandTransform.rotation;
-                        }
-                        if (inTextInput && !isKeyboardPc)
-                        {
-                            if (Vector3.Distance(VRKeyboard.transform.position, GorillaTagger.Instance.bodyCollider.transform.position) > menuScale)
-                            {
-                                VRKeyboard.transform.position = GorillaTagger.Instance.bodyCollider.transform.position;
-                                VRKeyboard.transform.rotation = GorillaTagger.Instance.bodyCollider.transform.rotation;
-                            }
-                            menu.transform.position = menuSpawnPosition.transform.position;
-                            menu.transform.rotation = menuSpawnPosition.transform.rotation;
-                            Vector3 rotModify = menu.transform.rotation.eulerAngles;
-                            rotModify += new Vector3(-90f, 90f, -90f);
-                            menu.transform.rotation = Quaternion.Euler(rotModify);
                         }
                         if (flipMenu)
                         {
@@ -2669,6 +2661,19 @@ namespace iiMenu.Menu
                     menu.transform.rotation = Quaternion.Euler(rotModify);
                 }
             }
+            if (inTextInput && !isKeyboardPc)
+            {
+                if (Vector3.Distance(VRKeyboard.transform.position, GorillaTagger.Instance.bodyCollider.transform.position) > menuScale)
+                {
+                    VRKeyboard.transform.position = GorillaTagger.Instance.bodyCollider.transform.position;
+                    VRKeyboard.transform.rotation = GorillaTagger.Instance.bodyCollider.transform.rotation;
+                }
+                menu.transform.position = menuSpawnPosition.transform.position;
+                menu.transform.rotation = menuSpawnPosition.transform.rotation;
+                Vector3 rotModify = menu.transform.rotation.eulerAngles;
+                rotModify += new Vector3(-90f, 90f, -90f);
+                menu.transform.rotation = Quaternion.Euler(rotModify);
+            }
             if (isKeyboardCondition)
             {
                 GetObject("Shoulder Camera").transform.Find("CM vcam1").gameObject.SetActive(false);
@@ -2688,8 +2693,7 @@ namespace iiMenu.Menu
                     if (physicalMenu)
                         Toggle("Physical Menu");
 
-                    Vector3[] pcpositions = new Vector3[]
-                    {
+                    Vector3[] pcpositions = {
                         new Vector3(10f, 10f, 10f),
                         new Vector3(10f, 10f, 10f),
                         new Vector3(-67.9299f, 11.9144f, -84.2019f),
@@ -2718,7 +2722,7 @@ namespace iiMenu.Menu
                     }
 
                     menu.transform.parent = TPC.transform;
-                    menu.transform.position = TPC.transform.position + (TPC.transform.forward * 0.5f);
+                    menu.transform.position = TPC.transform.position + TPC.transform.forward * 0.5f;
                     menu.transform.rotation = TPC.transform.rotation * Quaternion.Euler(-90f, 90f, 0f);
 
                     if (reference != null)
@@ -2760,23 +2764,15 @@ namespace iiMenu.Menu
 
             if (smoothMenuPosition)
             {
-                if (smoothTargetPosition == Vector3.zero)
-                    smoothTargetPosition = menu.transform.position;
-                else
-                    smoothTargetPosition = Vector3.Lerp(smoothTargetPosition, menu.transform.position, Time.deltaTime * 10f);
+                smoothTargetPosition = smoothTargetPosition == Vector3.zero ? menu.transform.position : Vector3.Lerp(smoothTargetPosition, menu.transform.position, Time.deltaTime * 10f);
 
                 menu.transform.position = smoothTargetPosition;
             }
 
-            if (smoothMenuRotation)
-            {
-                if (smoothTargetRotation == Quaternion.identity)
-                    smoothTargetRotation = menu.transform.rotation;
-                else
-                    smoothTargetRotation = Quaternion.Lerp(smoothTargetRotation, menu.transform.rotation, Time.deltaTime * 10f);
+            if (!smoothMenuRotation) return;
+            smoothTargetRotation = smoothTargetRotation == Quaternion.identity ? menu.transform.rotation : Quaternion.Lerp(smoothTargetRotation, menu.transform.rotation, Time.deltaTime * 10f);
 
-                menu.transform.rotation = smoothTargetRotation;
-            }
+            menu.transform.rotation = smoothTargetRotation;
         }
 
         public static event Action OnMenuOpened;
@@ -2784,18 +2780,16 @@ namespace iiMenu.Menu
         {
             OnMenuOpened?.Invoke();
             if (dynamicSounds)
-                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/open.wav", "open.wav"), buttonClickVolume / 10f);
+                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/open.ogg", "Audio/Menu/open.ogg"), buttonClickVolume / 10f);
 
             CreateMenu();
 
             if (dynamicAnimations)
                 CoroutineManager.RunCoroutine(GrowCoroutine());
 
-            if (!joystickMenu)
-            {
-                if (reference == null)
-                    CreateReference();
-            }
+            if (joystickMenu) return;
+            if (reference == null)
+                CreateReference();
         }
 
         public static event Action OnMenuClosed;
@@ -2803,6 +2797,8 @@ namespace iiMenu.Menu
         {
             OnMenuClosed?.Invoke();
             GetObject("Shoulder Camera").transform.Find("CM vcam1").gameObject.SetActive(true);
+            if (dynamicSounds)
+                Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/close.ogg", "Audio/Menu/close.ogg"), buttonClickVolume / 10f);
 
             try
             {
@@ -2814,6 +2810,8 @@ namespace iiMenu.Menu
                 }
             }
             catch { }
+
+            promptVideoPlayer?.Stop();
 
             smoothTargetPosition = Vector3.zero;
             smoothTargetRotation = Quaternion.identity;
@@ -2827,6 +2825,14 @@ namespace iiMenu.Menu
 
                         if (zeroGravityMenu)
                             comp.useGravity = false;
+
+                        if (menuCollisions)
+                        {
+                            GameObject collision = new GameObject("Collision");
+                            collision.transform.SetParent(menuBackground.transform, false);
+                            collision.layer = 3;
+                            collision.AddComponent<BoxCollider>();
+                        }
 
                         if (rightHand || (bothHands && openedwithright))
                         {
@@ -2870,10 +2876,14 @@ namespace iiMenu.Menu
                         }
                         catch { }
                     }
-                }
 
-                Destroy(menu);
-                menu = null;
+                    Destroy(menu, 5f);
+                    menu = null;
+                } else
+                {
+                    Destroy(menu);
+                    menu = null;
+                }
 
                 Destroy(reference);
                 reference = null;
@@ -2897,8 +2907,8 @@ namespace iiMenu.Menu
                     CreatePageButtonPair(
                         "PreviousPage", "NextPage",
                         new Vector3(0.09f, thinMenu ? 0.9f : 1.3f, buttonDistance * 0.8f),
-                        new Vector3(0.56f, 0f, 0.28f - (buttonDistance * (buttonOffset - 2))),
-                        new Vector3(0.56f, 0f, 0.28f - (buttonDistance * (buttonOffset - 1))),
+                        new Vector3(0.56f, 0f, 0.28f - buttonDistance * (buttonOffset - 2)),
+                        new Vector3(0.56f, 0f, 0.28f - buttonDistance * (buttonOffset - 1)),
                         new Vector3(0.064f, 0f, 0.109f - buttonDistance * (buttonOffset - 2) / 2.55f),
                         new Vector3(0.064f, 0f, 0.109f - buttonDistance * (buttonOffset - 1) / 2.55f),
                         Gradient
@@ -2956,6 +2966,10 @@ namespace iiMenu.Menu
             promptText.font = activeFont;
             promptText.text = PromptMessage;
 
+            string promptImageUrl = ExtractPromptImage(PromptMessage);
+            if (promptImageUrl != null)
+                promptText.text = promptText.text.Replace($"<{promptImageUrl}>", "");
+
             if (translate)
                 promptText.text = TranslateText(promptText.text, output => ReloadMenu());
 
@@ -2979,6 +2993,66 @@ namespace iiMenu.Menu
 
             component.localPosition = new Vector3(0.06f, 0f, IsText ? -0.025f : 0f);
             component.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
+
+            if (promptImageUrl != null)
+            {
+                string fileName = promptImageUrl.Split("/")[^1];
+                string fileExtension = GetFileExtension(fileName);
+
+                Image promptImage = new GameObject
+                {
+                    transform =
+                    {
+                        parent = canvasObj.transform
+                    }
+                }.AddComponent<Image>();
+
+                component.sizeDelta = new Vector2(component.sizeDelta.x, 0.03f);
+                component.localPosition = new Vector3(0.06f, 0f, 0.1f);
+
+                if (promptMat == null)
+                    promptMat = new Material(promptImage.material);
+
+                promptImage.material = promptMat;
+
+                RectTransform imageTransform = promptImage.GetComponent<RectTransform>();
+                imageTransform.localPosition = Vector3.zero;
+                imageTransform.sizeDelta = new Vector2(.2f, .2f);
+
+                imageTransform.localPosition = new Vector3(0.06f, 0f, promptText.text.IsNullOrEmpty() ? 0f : -0.03f);
+                imageTransform.rotation = Quaternion.Euler(new Vector3(180f, 90f, 90f));
+
+                switch (fileExtension)
+                {
+                    case "png":
+                    case "jpg":
+                        {
+                            promptImage.material.SetTexture("_MainTex", LoadTextureFromURL(promptImageUrl, fileName));
+                            promptImage.material.color = Color.white;
+                        }
+                        break;
+                    case "mp4":
+                    case "webm":
+                    case "mov":
+                        {
+                            promptVideoPlayer = new GameObject("iiMenu_PromptVideoPlayer").AddComponent<VideoPlayer>();
+                            promptVideoPlayer.playOnAwake = true;
+                            promptVideoPlayer.isLooping = true;
+                            promptVideoPlayer.url = promptImageUrl;
+
+                            RenderTexture rt = new RenderTexture(192, 144, 0);
+                            rt.Create();
+
+                            promptVideoPlayer.targetTexture = rt;
+
+                            promptImage.material = promptMat;
+                            promptImage.material.color = Color.white;
+                            promptImage.material.SetTexture("_MainTex", rt);
+                        }
+                        break;
+                }
+                
+            }
 
             if (outlineText)
                 OutlineCanvasObject(promptText);
@@ -3036,7 +3110,6 @@ namespace iiMenu.Menu
 
                 if (uppercaseMode)
                     text.text = text.text.ToUpper();
-
 
                 RectTransform textRect = text.GetComponent<RectTransform>();
                 textRect.sizeDelta = new Vector2(0.2f, 0.03f);
@@ -3154,6 +3227,18 @@ namespace iiMenu.Menu
             }
         }
 
+        private static string ExtractPromptImage(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return null;
+
+            var match = Regex.Match(input, @"<(?<url>https?://[^>]+)>");
+            if (match.Success)
+                return match.Groups["url"].Value;
+
+            return null;
+        }
+
         private static GameObject AdvancedAddButton(string buttonName, Vector3 scale, Vector3 position, Vector3 textPosition, ExtGradient color, Vector2? textSize, int arrowIndex)
         {
             GameObject button = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -3237,7 +3322,7 @@ namespace iiMenu.Menu
             colorChanger.colors = buttonColors[shouldBeEnabled ? 1 : 0];
         }
 
-        public static Material outlineMat = new Material(Shader.Find("Sprites/Default"));
+        public static readonly Material outlineMat = new Material(Shader.Find("Sprites/Default"));
         public static void OutlineCanvasObject(Text text, bool clamp = false)
         {
             foreach (Vector3 offset in new[] { new Vector3(0f, 1f, 1f), new Vector3(0f, -1f, 1f), new Vector3(0f, 1f, -1f), new Vector3(0f, -1f, -1f) })
@@ -3246,7 +3331,7 @@ namespace iiMenu.Menu
                 newText.text = NoColorTags(text.text);
 
                 newText.transform.SetParent(text.transform.parent, false);
-                newText.rectTransform.localPosition = text.rectTransform.localPosition + (offset * 0.001f);// + new Vector3(-0.0025f, 0f, 0f);
+                newText.rectTransform.localPosition = text.rectTransform.localPosition + offset * 0.001f;// + new Vector3(-0.0025f, 0f, 0f);
 
                 newText.material = outlineMat;
                 newText.color = Color.black;
@@ -3286,7 +3371,7 @@ namespace iiMenu.Menu
                 Image newImage = Instantiate(image);
 
                 newImage.transform.SetParent(image.transform.parent, false);
-                newImage.rectTransform.localPosition = image.rectTransform.localPosition + (offset * 0.001f);
+                newImage.rectTransform.localPosition = image.rectTransform.localPosition + offset * 0.001f;
                 
                 newImage.material = targetMaterial;
                 newImage.color = Color.black;
@@ -3323,7 +3408,7 @@ namespace iiMenu.Menu
             RoundCornerA.transform.parent = menu.transform;
             RoundCornerA.transform.rotation = Quaternion.identity * Quaternion.Euler(0f, 0f, 90f);
 
-            RoundCornerA.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, (toRound.transform.localScale.y / 2f) - (Bevel * 1.275f), (toRound.transform.localScale.z / 2f) - Bevel);
+            RoundCornerA.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, toRound.transform.localScale.y / 2f - Bevel * 1.275f, toRound.transform.localScale.z / 2f - Bevel);
             RoundCornerA.transform.localScale = new Vector3(Bevel * 2.55f, toRound.transform.localScale.x / 2f, Bevel * 2f);
 
             GameObject RoundCornerB = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -3333,7 +3418,7 @@ namespace iiMenu.Menu
             RoundCornerB.transform.parent = menu.transform;
             RoundCornerB.transform.rotation = Quaternion.identity * Quaternion.Euler(0f, 0f, 90f);
 
-            RoundCornerB.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, -(toRound.transform.localScale.y / 2f) + (Bevel * 1.275f), (toRound.transform.localScale.z / 2f) - Bevel);
+            RoundCornerB.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, -(toRound.transform.localScale.y / 2f) + Bevel * 1.275f, toRound.transform.localScale.z / 2f - Bevel);
             RoundCornerB.transform.localScale = new Vector3(Bevel * 2.55f, toRound.transform.localScale.x / 2f, Bevel * 2f);
 
             GameObject RoundCornerC = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -3343,7 +3428,7 @@ namespace iiMenu.Menu
             RoundCornerC.transform.parent = menu.transform;
             RoundCornerC.transform.rotation = Quaternion.identity * Quaternion.Euler(0f, 0f, 90f);
 
-            RoundCornerC.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, (toRound.transform.localScale.y / 2f) - (Bevel * 1.275f), -(toRound.transform.localScale.z / 2f) + Bevel);
+            RoundCornerC.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, toRound.transform.localScale.y / 2f - Bevel * 1.275f, -(toRound.transform.localScale.z / 2f) + Bevel);
             RoundCornerC.transform.localScale = new Vector3(Bevel * 2.55f, toRound.transform.localScale.x / 2f, Bevel * 2f);
 
             GameObject RoundCornerD = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -3353,11 +3438,10 @@ namespace iiMenu.Menu
             RoundCornerD.transform.parent = menu.transform;
             RoundCornerD.transform.rotation = Quaternion.identity * Quaternion.Euler(0f, 0f, 90f);
 
-            RoundCornerD.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, -(toRound.transform.localScale.y / 2f) + (Bevel * 1.275f), -(toRound.transform.localScale.z / 2f) + Bevel);
+            RoundCornerD.transform.localPosition = toRound.transform.localPosition + new Vector3(0f, -(toRound.transform.localScale.y / 2f) + Bevel * 1.275f, -(toRound.transform.localScale.z / 2f) + Bevel);
             RoundCornerD.transform.localScale = new Vector3(Bevel * 2.55f, toRound.transform.localScale.x / 2f, Bevel * 2f);
 
-            GameObject[] ToChange = new GameObject[]
-            {
+            GameObject[] ToChange = {
                 BaseA,
                 BaseB,
                 RoundCornerA,
@@ -3443,16 +3527,23 @@ namespace iiMenu.Menu
                 ReloadMenu();
         }
 
+        private static string versionArchive;
+        public static void UpdatePrompt(string newVersion = null)
+        {
+            versionArchive ??= newVersion;
+            Prompt($"A new version is available ({newVersion}). Would you like to update?", Settings.UpdateMenu);
+        }
+
         private static void LoadAssetBundle()
         {
-            Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("iiMenu.Resources.iimenu");
+            Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{PluginInfo.ClientResourcePath}.iimenu");
             if (stream != null)
                 assetBundle = AssetBundle.LoadFromStream(stream);
             else
                 LogManager.LogError("Failed to load assetbundle");
         }
 
-        public static T LoadObject<T>(string assetName) where T : UnityEngine.Object
+        public static T LoadObject<T>(string assetName) where T : Object
         {
             if (assetBundle == null)
                 LoadAssetBundle();
@@ -3461,7 +3552,7 @@ namespace iiMenu.Menu
             return gameObject;
         }
 
-        public static T LoadAsset<T>(string assetName) where T : UnityEngine.Object
+        public static T LoadAsset<T>(string assetName) where T : Object
         {
             if (assetBundle == null)
                 LoadAssetBundle();
@@ -3470,11 +3561,11 @@ namespace iiMenu.Menu
             return gameObject;
         }
 
-        public static Dictionary<string, AudioClip> audioFilePool = new Dictionary<string, AudioClip>();
+        public static readonly Dictionary<string, AudioClip> audioFilePool = new Dictionary<string, AudioClip>();
         public static AudioClip LoadSoundFromFile(string fileName) // Thanks to ShibaGT for help with loading the audio from file
         {
             AudioClip sound;
-            if (!audioFilePool.ContainsKey(fileName))
+            if (!audioFilePool.TryGetValue(fileName, out var value))
             {
                 string filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, $"{PluginInfo.BaseDirectory}/{fileName}");
                 filePath = $"{filePath.Split("BepInEx\\")[0]}{PluginInfo.BaseDirectory}/{fileName}";
@@ -3490,25 +3581,34 @@ namespace iiMenu.Menu
                 audioFilePool.Add(fileName, sound);
             }
             else
-                sound = audioFilePool[fileName];
+                sound = value;
 
             return sound;
         }
 
         public static AudioClip LoadSoundFromURL(string resourcePath, string fileName)
         {
-            if (!File.Exists($"{PluginInfo.BaseDirectory}/{fileName}"))
+            string filePath = $"{PluginInfo.BaseDirectory}/{fileName}";
+            string directory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            if (!File.Exists(filePath))
             {
                 LogManager.Log("Downloading " + fileName);
-                WebClient stream = new WebClient();
-                stream.DownloadFile(resourcePath, $"{PluginInfo.BaseDirectory}/{fileName}");
+                using WebClient stream = new WebClient();
+                stream.DownloadFile(resourcePath, filePath);
             }
 
             return LoadSoundFromFile(fileName);
         }
 
+        public static readonly Dictionary<string, Texture2D> textureResourceDictionary = new Dictionary<string, Texture2D>();
         public static Texture2D LoadTextureFromResource(string resourcePath)
         {
+            if (textureResourceDictionary.TryGetValue(resourcePath, out Texture2D existingTexture))
+                return existingTexture;
+
             Texture2D texture = new Texture2D(2, 2);
 
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath);
@@ -3521,27 +3621,40 @@ namespace iiMenu.Menu
             else
                 LogManager.LogError("Failed to load texture from resource: " + resourcePath);
 
+            textureResourceDictionary[resourcePath] = texture;
+
             return texture;
         }
 
+        public static readonly Dictionary<string, Texture2D> textureUrlDictionary = new Dictionary<string, Texture2D>();
         public static Texture2D LoadTextureFromURL(string resourcePath, string fileName)
         {
+            if (textureUrlDictionary.TryGetValue(resourcePath, out Texture2D existingTexture))
+                return existingTexture;
+
+            string filePath = $"{PluginInfo.BaseDirectory}/{fileName}";
+            string directory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
             Texture2D texture = new Texture2D(2, 2);
 
-            if (!File.Exists($"{PluginInfo.BaseDirectory}/" + fileName))
+            if (!File.Exists(filePath))
             {
                 LogManager.Log("Downloading " + fileName);
                 WebClient stream = new WebClient();
-                stream.DownloadFile(resourcePath, $"{PluginInfo.BaseDirectory}/" + fileName);
+                stream.DownloadFile(resourcePath, filePath);
             }
 
-            byte[] bytes = File.ReadAllBytes($"{PluginInfo.BaseDirectory}/" + fileName);
+            byte[] bytes = File.ReadAllBytes(filePath);
             texture.LoadImage(bytes);
+
+            textureUrlDictionary[resourcePath] = texture;
 
             return texture;
         }
 
-        public static Dictionary<(Color, Color), Texture2D> cacheGradients = new Dictionary<(Color, Color), Texture2D>();
+        public static readonly Dictionary<(Color, Color), Texture2D> cacheGradients = new Dictionary<(Color, Color), Texture2D>();
 
         public static Texture2D GetGradientTexture(Color colorA, Color colorB)
         {
@@ -3648,7 +3761,7 @@ namespace iiMenu.Menu
                     Up = GorillaTagger.Instance.headCollider.transform.up;
                     Right = GorillaTagger.Instance.headCollider.transform.right;
                     Direction = GorillaTagger.Instance.headCollider.transform.forward;
-                    StartPosition = GorillaTagger.Instance.headCollider.transform.position + (Up * 0.1f);
+                    StartPosition = GorillaTagger.Instance.headCollider.transform.position + Up * 0.1f;
                     break;
             }
 
@@ -3663,7 +3776,7 @@ namespace iiMenu.Menu
                 Right = GunTransform.right;
             }
 
-            Physics.Raycast(StartPosition + ((Direction / 4f) * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f)), Direction, out var Ray, 512f, overrideLayerMask ?? NoInvisLayerMask());
+            Physics.Raycast(StartPosition + Direction / 4f * (scaleWithPlayer ? GTPlayer.Instance.scale : 1f), Direction, out var Ray, 512f, overrideLayerMask ?? NoInvisLayerMask());
             if (shouldBePC)
             {
                 Ray ray = TPC.ScreenPointToRay(Mouse.current.position.ReadValue());
@@ -3674,7 +3787,7 @@ namespace iiMenu.Menu
             Vector3 EndPosition = gunLocked ? lockTarget.transform.position : Ray.point;
 
             if (EndPosition == Vector3.zero)
-                EndPosition = StartPosition + (Direction * 512f);
+                EndPosition = StartPosition + Direction * 512f;
 
             if (SmoothGunPointer)
             {
@@ -3691,7 +3804,7 @@ namespace iiMenu.Menu
 
             Renderer PointerRenderer = GunPointer.GetComponent<Renderer>();
             PointerRenderer.material.shader = Shader.Find("GUI/Text Shader");
-            PointerRenderer.material.color = (gunLocked || GetGunInput(true)) ? buttonColors[1].GetCurrentColor() : buttonColors[0].GetCurrentColor();
+            PointerRenderer.material.color = gunLocked || GetGunInput(true) ? buttonColors[1].GetCurrentColor() : buttonColors[0].GetCurrentColor();
 
             if (disableGunPointer)
                 PointerRenderer.enabled = false;
@@ -3741,10 +3854,10 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
-                                GunLine.SetPosition(i, Position + (UnityEngine.Random.Range(0f, 1f) > 0.75f ? new Vector3(UnityEngine.Random.Range(-0.1f, 0.1f), UnityEngine.Random.Range(-0.1f, 0.1f), UnityEngine.Random.Range(-0.1f, 0.1f)) : Vector3.zero));
+                                GunLine.SetPosition(i, Position + (Random.Range(0f, 1f) > 0.75f ? new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f)) : Vector3.zero));
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3756,12 +3869,12 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
-                                float value = ((float)i / (float)Step) * 50f;
+                                float value = i / (float)Step * 50f;
 
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
-                                GunLine.SetPosition(i, Position + (Up * Mathf.Sin((Time.time * -10f) + value) * 0.1f));
+                                GunLine.SetPosition(i, Position + Up * Mathf.Sin(Time.time * -10f + value) * 0.1f);
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3773,7 +3886,7 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
                                 GunLine.SetPosition(i, new Vector3(Mathf.Round(Position.x * 25f) / 25f, Mathf.Round(Position.y * 25f) / 25f, Mathf.Round(Position.z * 25f) / 25f));
@@ -3790,10 +3903,10 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
-                                GunLine.SetPosition(i, Position + (Up * Mathf.Sin(Time.time * 10f) * (i % 2 == 0 ? 0.1f : -0.1f)));
+                                GunLine.SetPosition(i, Position + Up * Mathf.Sin(Time.time * 10f) * (i % 2 == 0 ? 0.1f : -0.1f));
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3805,12 +3918,12 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
-                                float value = ((float)i / (float)Step) * 50f;
+                                float value = i / (float)Step * 50f;
 
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
-                                GunLine.SetPosition(i, Position + (Right * Mathf.Cos((Time.time * -10f) + value) * 0.1f) + (Up * Mathf.Sin((Time.time * -10f) + value) * 0.1f));
+                                GunLine.SetPosition(i, Position + Right * Mathf.Cos(Time.time * -10f + value) * 0.1f + Up * Mathf.Sin(Time.time * -10f + value) * 0.1f);
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3822,10 +3935,10 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
-                                float value = ((float)i / (float)Step) * 15f;
-                                GunLine.SetPosition(i, Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f)) + (Up * Mathf.Abs(Mathf.Sin((Time.time * -10f) + value)) * 0.3f));
+                                float value = i / (float)Step * 15f;
+                                GunLine.SetPosition(i, Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f)) + Up * Mathf.Abs(Mathf.Sin(Time.time * -10f + value)) * 0.3f);
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3847,7 +3960,7 @@ namespace iiMenu.Menu
                             if (localRecorder != null)
                                 audioSize += localRecorder.Loudness * 3f;
 
-                            volumeArchive.Insert(0, volumeArchive.Count == 0 ? 0 : (audioSize - volumeArchive[0] * 0.1f));
+                            volumeArchive.Insert(0, volumeArchive.Count == 0 ? 0 : audioSize - volumeArchive[0] * 0.1f);
 
                             if (volumeArchive.Count > Step)
                                 volumeArchive.Remove(Step);
@@ -3855,10 +3968,10 @@ namespace iiMenu.Menu
                             GunLine.positionCount = Step;
                             GunLine.SetPosition(0, StartPosition);
 
-                            for (int i = 1; i < (Step - 1); i++)
+                            for (int i = 1; i < Step - 1; i++)
                             {
                                 Vector3 Position = Vector3.Lerp(StartPosition, EndPosition, i / (Step - 1f));
-                                GunLine.SetPosition(i, Position + (Up * (i >= volumeArchive.Count ? 0 : volumeArchive[i]) * (i % 2 == 0 ? 1f : -1f)));
+                                GunLine.SetPosition(i, Position + Up * (i >= volumeArchive.Count ? 0 : volumeArchive[i]) * (i % 2 == 0 ? 1f : -1f));
                             }
 
                             GunLine.SetPosition(Step - 1, EndPosition);
@@ -3905,22 +4018,20 @@ namespace iiMenu.Menu
             {
                 if (isShooting)
                     return TriggerlessGuns || (SwapGunHand ? giveGunTarget.leftIndex.calcT > 0.5f : giveGunTarget.rightIndex.calcT > 0.5f);
-                else
-                    return GriplessGuns || (SwapGunHand ? giveGunTarget.leftMiddle.calcT > 0.5f : giveGunTarget.rightMiddle.calcT > 0.5f);
+                return GriplessGuns || (SwapGunHand ? giveGunTarget.leftMiddle.calcT > 0.5f : giveGunTarget.rightMiddle.calcT > 0.5f);
             }
 
             if (isShooting)
                 return TriggerlessGuns || (SwapGunHand ? leftTrigger > 0.5f : rightTrigger > 0.5f) || Mouse.current.leftButton.isPressed;
-            else
-                return GriplessGuns || (SwapGunHand ? leftGrab : rightGrab) || (HardGunLocks && gunLocked && !rightSecondary) || Mouse.current.rightButton.isPressed;
+            return GriplessGuns || (SwapGunHand ? leftGrab : rightGrab) || (HardGunLocks && gunLocked && !rightSecondary) || Mouse.current.rightButton.isPressed;
         }
 
         public static Vector3 GetGunDirection(Transform transform) =>
             new[] { transform.forward, - transform.up, transform == GorillaTagger.Instance.rightHandTransform ? TrueRightHand().forward : TrueLeftHand().forward, GorillaTagger.Instance.headCollider.transform.forward } [GunDirection];
 
-        public static System.Collections.IEnumerator NarrateText(string text)
+        public static IEnumerator NarrateText(string text)
         {
-            if (Time.time < (timeMenuStarted + 5f))
+            if (Time.time < timeMenuStarted + 5f)
                 yield break;
 
             string fileName = $"{GetSHA256(text)}{(narratorIndex == 0 ? ".wav" : ".mp3")}";
@@ -3969,9 +4080,9 @@ namespace iiMenu.Menu
             Play2DAudio(clip, buttonClickVolume / 10f);
         }
 
-        public static System.Collections.IEnumerator SpeakText(string text)
+        public static IEnumerator SpeakText(string text)
         {
-            if (Time.time < (timeMenuStarted + 5f))
+            if (Time.time < timeMenuStarted + 5f)
                 yield break;
 
             string fileName = $"{GetSHA256(text)}{(narratorIndex == 0 ? ".wav" : ".mp3")}";
@@ -4020,7 +4131,7 @@ namespace iiMenu.Menu
             Sound.PlayAudio($"TTS{(narratorName == "Default" ? "" : narratorName)}/{fileName}");
         }
 
-        public static bool isAdmin = false;
+        public static bool isAdmin;
         public static void SetupAdminPanel(string playername)
         {
             List<ButtonInfo> buttons = Buttons.buttons[0].ToList();
@@ -4043,7 +4154,7 @@ namespace iiMenu.Menu
 
             string first = array[0];
             string[] others = array.Skip(1).OrderBy(s => s).ToArray();
-            return new string[] { first }.Concat(others).ToArray();
+            return new[] { first }.Concat(others).ToArray();
         }
 
         public static string[] AlphabetizeNoSkip(string[] array)
@@ -4051,7 +4162,6 @@ namespace iiMenu.Menu
             if (array.Length <= 1)
                 return array;
 
-            string first = array[0];
             string[] others = array.OrderBy(s => s).ToArray();
             return others.ToArray();
         }
@@ -4107,7 +4217,7 @@ namespace iiMenu.Menu
             return path;
         }
 
-        public static System.Collections.IEnumerator GrowCoroutine()
+        public static IEnumerator GrowCoroutine()
         {
             float elapsedTime = 0f;
             Vector3 target = scaleWithPlayer ? new Vector3(0.1f, 0.3f, 0.3825f) * (menuScale * GTPlayer.Instance.scale) : new Vector3(0.1f, 0.3f, 0.3825f);
@@ -4121,7 +4231,7 @@ namespace iiMenu.Menu
             menu.transform.localScale = target;
         }
 
-        public static System.Collections.IEnumerator ShrinkCoroutine()
+        public static IEnumerator ShrinkCoroutine()
         {
             Transform menuTransform = menu.transform;
             menu = null;
@@ -4138,13 +4248,13 @@ namespace iiMenu.Menu
             Destroy(menuTransform.gameObject);
         }
 
-        public static System.Collections.IEnumerator ButtonClick(int buttonIndex, Renderer render)
+        public static IEnumerator ButtonClick(int buttonIndex, Renderer render)
         {
             lastClickedName = "";
             float elapsedTime = 0f;
             while (elapsedTime < 0.1f)
             {
-                int from = (buttonIndex < 0 && swapButtonColors) ? 0 : 1;
+                int from = buttonIndex < 0 && swapButtonColors ? 0 : 1;
                 int to = 1 - from;
 
                 render.material.color = Color.Lerp(
@@ -4169,25 +4279,8 @@ namespace iiMenu.Menu
             }
         }
 
-        public static System.Collections.IEnumerator KeyboardClick(GameObject targetKey)
-        {
-            Renderer render = targetKey.GetComponent<Renderer>();
-            ColorChanger colorChanger = targetKey.GetComponent<ColorChanger>();
-
-            colorChanger.enabled = false;
-            float elapsedTime = 0f;
-            while (elapsedTime < 0.1f)
-            {
-                render.material.color = Color.Lerp(buttonColors[1].GetCurrentColor(), buttonColors[0].GetCurrentColor(), elapsedTime / 0.1f);
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
-
-            colorChanger.enabled = true;
-        }
-
-        public static SnowballThrowable[] snowballs = new SnowballThrowable[] { };
-        public static Dictionary<string, SnowballThrowable> snowballDict = null;
+        public static SnowballThrowable[] snowballs = { };
+        public static Dictionary<string, SnowballThrowable> snowballDict;
         public static SnowballThrowable GetProjectile(string projectileName)
         {
             if (snowballDict == null)
@@ -4212,16 +4305,15 @@ namespace iiMenu.Menu
 
             projectileName += "(Clone)";
 
-            if (snowballDict != null && snowballDict.ContainsKey(projectileName))
-                return snowballDict[projectileName];
-            else
-                return null;
+            if (snowballDict != null && snowballDict.TryGetValue(projectileName, out var projectile))
+                return projectile;
+            return null;
         }
 
-        public static Dictionary<Type, object[]> typePool = new Dictionary<Type, object[]>();
+        public static readonly Dictionary<Type, object[]> typePool = new Dictionary<Type, object[]>();
         private static readonly Dictionary<Type, float> receiveTypeDelay = new Dictionary<Type, float>();
 
-        public static T[] GetAllType<T>(float decayTime = 5f) where T : UnityEngine.Object
+        public static T[] GetAllType<T>(float decayTime = 5f) where T : Object
         {
             Type type = typeof(T);
 
@@ -4242,25 +4334,24 @@ namespace iiMenu.Menu
 
         private static float randomIndex;
         private static float randomDecayTime;
-        public static T GetRandomType<T>(float decayTime = 0f) where T : UnityEngine.Object
+        public static T GetRandomType<T>(float decayTime = 0f) where T : Object
         {
             T[] allOfType = GetAllType<T>();
 
             if (Time.time > randomDecayTime)
             {
-                randomIndex = UnityEngine.Random.Range(0f, 1f);
+                randomIndex = Random.Range(0f, 1f);
                 randomDecayTime = Time.time + decayTime;
             }
 
             return allOfType[(int)(randomIndex * allOfType.Length)];
         }
 
-        public static void ClearType<T>() where T : UnityEngine.Object
+        public static void ClearType<T>() where T : Object
         {
             Type type = typeof(T);
 
-            if (typePool.ContainsKey(type))
-                typePool.Remove(type);
+            typePool.Remove(type);
         }
 
         private static VRRig rigTarget;
@@ -4303,10 +4394,12 @@ namespace iiMenu.Menu
             return infectedPlayers.Contains(targetPlayer);
         }
 
-        public static bool VrRigIsLocal(VRRig Player) => 
+        public static bool PlayerIsLocal(VRRig Player) => 
             Player.isLocal || Player == GhostRig;
-        public static bool PlayerIsLocal(VRRig Player) =>
-            Player.isLocal || Player == GhostRig;
+
+        // Credits to zvbex for the 'FIRST LOGIN' concat check
+        // Credits to HanSolo1000Falcon/WhoIsThatMonke for improved checks
+
         public static bool PlayerIsSteam(VRRig Player)
         {
             string concat = Player.concatStringOfCosmeticsAllowed;
@@ -4357,29 +4450,29 @@ namespace iiMenu.Menu
 
             switch (GorillaGameManager.instance.GameType())
             {
-                case GorillaGameModes.GameModeType.Infection:
-                case GorillaGameModes.GameModeType.InfectionCompetitive:
-                case GorillaGameModes.GameModeType.FreezeTag:
-                case GorillaGameModes.GameModeType.PropHunt:
+                case GameModeType.Infection:
+                case GameModeType.InfectionCompetitive:
+                case GameModeType.FreezeTag:
+                case GameModeType.PropHunt:
                     GorillaTagManager tagManager = (GorillaTagManager)GorillaGameManager.instance;
                     if (tagManager.isCurrentlyTag)
                         infected.Add(tagManager.currentIt);
                     else
                         infected.AddRange(tagManager.currentInfected);
                     break;
-                case GorillaGameModes.GameModeType.Ghost:
-                case GorillaGameModes.GameModeType.Ambush:
+                case GameModeType.Ghost:
+                case GameModeType.Ambush:
                     GorillaAmbushManager ghostManager = (GorillaAmbushManager)GorillaGameManager.instance;
                     if (ghostManager.isCurrentlyTag)
                         infected.Add(ghostManager.currentIt);
                     else
                         infected.AddRange(ghostManager.currentInfected);
                     break;
-                case GorillaGameModes.GameModeType.Paintbrawl:
+                case GameModeType.Paintbrawl:
                     GorillaPaintbrawlManager paintbrawlManager = (GorillaPaintbrawlManager)GorillaGameManager.instance;
 
                     foreach (int deadPlayer in paintbrawlManager.playerLives.Where(element => element.Value <= 0).Select(element => element.Key).ToArray())
-                        infected.Add(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(deadPlayer, false));
+                        infected.Add(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(deadPlayer));
 
                     if (!infected.Contains(NetworkSystem.Instance.LocalPlayer))
                         infected.Add(NetworkSystem.Instance.LocalPlayer);
@@ -4424,25 +4517,25 @@ namespace iiMenu.Menu
         {
             switch (GorillaGameManager.instance.GameType())
             {
-                case GorillaGameModes.GameModeType.Infection:
-                case GorillaGameModes.GameModeType.InfectionCompetitive:
-                case GorillaGameModes.GameModeType.FreezeTag:
-                case GorillaGameModes.GameModeType.PropHunt:
+                case GameModeType.Infection:
+                case GameModeType.InfectionCompetitive:
+                case GameModeType.FreezeTag:
+                case GameModeType.PropHunt:
                     GorillaTagManager tagManager = (GorillaTagManager)GorillaGameManager.instance;
                     if (tagManager.isCurrentlyTag && tagManager.currentIt == plr)
                         tagManager.currentIt = null;
                     else if (!tagManager.isCurrentlyTag && tagManager.currentInfected.Contains(plr))
                         tagManager.currentInfected.Remove(plr);
                     break;
-                case GorillaGameModes.GameModeType.Ghost:
-                case GorillaGameModes.GameModeType.Ambush:
+                case GameModeType.Ghost:
+                case GameModeType.Ambush:
                     GorillaAmbushManager ghostManager = (GorillaAmbushManager)GorillaGameManager.instance;
                     if (ghostManager.isCurrentlyTag && ghostManager.currentIt == plr)
                         ghostManager.currentIt = null;
                     else if (!ghostManager.isCurrentlyTag && ghostManager.currentInfected.Contains(plr))
                         ghostManager.currentInfected.Remove(plr);
                     break;
-                case GorillaGameModes.GameModeType.Paintbrawl:
+                case GameModeType.Paintbrawl:
                     GorillaPaintbrawlManager paintbrawlManager = (GorillaPaintbrawlManager)GorillaGameManager.instance;
                     paintbrawlManager.playerLives[plr.ActorNumber] = 3;
 
@@ -4454,21 +4547,21 @@ namespace iiMenu.Menu
         {
             switch (GorillaGameManager.instance.GameType())
             {
-                case GorillaGameModes.GameModeType.Infection:
-                case GorillaGameModes.GameModeType.InfectionCompetitive:
-                case GorillaGameModes.GameModeType.FreezeTag:
-                case GorillaGameModes.GameModeType.PropHunt:
+                case GameModeType.Infection:
+                case GameModeType.InfectionCompetitive:
+                case GameModeType.FreezeTag:
+                case GameModeType.PropHunt:
                     GorillaTagManager tagManager = (GorillaTagManager)GorillaGameManager.instance;
                     tagManager.ChangeCurrentIt(plr);
 
                     break;
-                case GorillaGameModes.GameModeType.Ghost:
-                case GorillaGameModes.GameModeType.Ambush:
+                case GameModeType.Ghost:
+                case GameModeType.Ambush:
                     GorillaAmbushManager ghostManager = (GorillaAmbushManager)GorillaGameManager.instance;
                     ghostManager.ChangeCurrentIt(plr);
 
                     break;
-                case GorillaGameModes.GameModeType.Paintbrawl:
+                case GameModeType.Paintbrawl:
                     GorillaPaintbrawlManager paintbrawlManager = (GorillaPaintbrawlManager)GorillaGameManager.instance;
                     paintbrawlManager.playerLives[plr.ActorNumber] = 0;
 
@@ -4480,23 +4573,23 @@ namespace iiMenu.Menu
         {
             switch (GorillaGameManager.instance.GameType())
             {
-                case GorillaGameModes.GameModeType.Infection:
-                case GorillaGameModes.GameModeType.InfectionCompetitive:
-                case GorillaGameModes.GameModeType.FreezeTag:
-                case GorillaGameModes.GameModeType.PropHunt:
+                case GameModeType.Infection:
+                case GameModeType.InfectionCompetitive:
+                case GameModeType.FreezeTag:
+                case GameModeType.PropHunt:
                     GorillaTagManager tagManager = (GorillaTagManager)GorillaGameManager.instance;
                     if (tagManager.currentIt == plr)
                         tagManager.ChangeCurrentIt(null);
 
                     break;
-                case GorillaGameModes.GameModeType.Ghost:
-                case GorillaGameModes.GameModeType.Ambush:
+                case GameModeType.Ghost:
+                case GameModeType.Ambush:
                     GorillaAmbushManager ghostManager = (GorillaAmbushManager)GorillaGameManager.instance;
                     if (ghostManager.currentIt == plr)
                         ghostManager.ChangeCurrentIt(null);
 
                     break;
-                case GorillaGameModes.GameModeType.Paintbrawl:
+                case GameModeType.Paintbrawl:
                     GorillaPaintbrawlManager paintbrawlManager = (GorillaPaintbrawlManager)GorillaGameManager.instance;
                     paintbrawlManager.playerLives[plr.ActorNumber] = 3;
 
@@ -4509,19 +4602,19 @@ namespace iiMenu.Menu
             world - GorillaTagger.Instance.bodyCollider.transform.position + GorillaTagger.Instance.transform.position;
 
         public static Vector3 RandomVector3(float range = 1f) =>
-            new Vector3(UnityEngine.Random.Range(-range, range),
-                        UnityEngine.Random.Range(-range, range),
-                        UnityEngine.Random.Range(-range, range));
+            new Vector3(Random.Range(-range, range),
+                        Random.Range(-range, range),
+                        Random.Range(-range, range));
 
         public static Quaternion RandomQuaternion(float range = 360f) =>
-            Quaternion.Euler(UnityEngine.Random.Range(0f, range),
-                        UnityEngine.Random.Range(0f, range),
-                        UnityEngine.Random.Range(0f, range));
+            Quaternion.Euler(Random.Range(0f, range),
+                        Random.Range(0f, range),
+                        Random.Range(0f, range));
 
         public static Color RandomColor(byte range = 255, byte alpha = 255) =>
-            new Color32((byte)UnityEngine.Random.Range(0, range),
-                        (byte)UnityEngine.Random.Range(0, range),
-                        (byte)UnityEngine.Random.Range(0, range),
+            new Color32((byte)Random.Range(0, range),
+                        (byte)Random.Range(0, range),
+                        (byte)Random.Range(0, range),
                         alpha);
 
         // True left and right hand get the exact position and rotation of the middle of the hand
@@ -4545,8 +4638,7 @@ namespace iiMenu.Menu
 
         public static void FixStickyColliders(GameObject platform)
         {
-            Vector3[] localPositions = new Vector3[]
-            {
+            Vector3[] localPositions = {
                 new Vector3(0, 1f, 0),
                 new Vector3(0, -1f, 0),
                 new Vector3(1f, 0, 0),
@@ -4554,8 +4646,7 @@ namespace iiMenu.Menu
                 new Vector3(0, 0, 1f),
                 new Vector3(0, 0, -1f)
             };
-            Quaternion[] localRotations = new Quaternion[]
-            {
+            Quaternion[] localRotations = {
                 Quaternion.Euler(90, 0, 0),
                 Quaternion.Euler(-90, 0, 0),
                 Quaternion.Euler(0, -90, 0),
@@ -4575,8 +4666,8 @@ namespace iiMenu.Menu
             }
         }
 
-        public static Dictionary<(long, float), GameObject> auraPool = new Dictionary<(long, float), GameObject>();
-        public static void VisualizeAura(Vector3 position, float range, Color color, long? indexId = null)
+        public static readonly Dictionary<(long, float), GameObject> auraPool = new Dictionary<(long, float), GameObject>();
+        public static void VisualizeAura(Vector3 position, float range, Color color, long? indexId = null, float alpha = 0.25f)
         {
             long index = indexId ?? BitPackUtils.PackWorldPosForNetwork(position);
             var key = (index, range);
@@ -4600,13 +4691,13 @@ namespace iiMenu.Menu
             Renderer auraRenderer = visualizeGO.GetComponent<Renderer>();
 
             Color clr = color;
-            clr.a = 0.25f;
+            clr.a = alpha;
             auraRenderer.material.shader = Shader.Find("GUI/Text Shader");
             auraRenderer.material.color = clr;
         }
 
-        public static Dictionary<(Vector3, Quaternion, Vector3), GameObject> cubePool = new Dictionary<(Vector3, Quaternion, Vector3), GameObject>();
-        public static void VisualizeCube(Vector3 position, Quaternion rotation, Vector3 scale, Color color)
+        public static readonly Dictionary<(Vector3, Quaternion, Vector3), GameObject> cubePool = new Dictionary<(Vector3, Quaternion, Vector3), GameObject>();
+        public static void VisualizeCube(Vector3 position, Quaternion rotation, Vector3 scale, Color color, float alpha = 0.25f)
         {
             var key = (position, rotation, scale);
 
@@ -4630,13 +4721,60 @@ namespace iiMenu.Menu
             Renderer auraRenderer = visualizeGO.GetComponent<Renderer>();
 
             Color clr = color;
-            clr.a = 0.25f;
+            clr.a = alpha;
             auraRenderer.material.shader = Shader.Find("GUI/Text Shader");
             auraRenderer.material.color = clr;
         }
 
+        public static GameObject VisualizeAuraObject(Vector3 position, float range, Color color, float alpha = 0.25f)
+        {
+            GameObject visualizeGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Destroy(visualizeGO.GetComponent<Collider>());
+
+            visualizeGO.SetActive(true);
+
+            visualizeGO.transform.position = position;
+            visualizeGO.transform.localScale = new Vector3(range, range, range);
+
+            if (GetIndex("Hidden on Camera").enabled)
+                visualizeGO.layer = 19;
+
+            Renderer auraRenderer = visualizeGO.GetComponent<Renderer>();
+
+            Color clr = color;
+            clr.a = alpha;
+            auraRenderer.material.shader = Shader.Find("GUI/Text Shader");
+            auraRenderer.material.color = clr;
+
+            return visualizeGO;
+        }
+
+        public static GameObject VisualizeCubeObject(Vector3 position, Quaternion rotation, Vector3 scale, Color color, float alpha = 0.25f)
+        {
+            GameObject visualizeGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(visualizeGO.GetComponent<Collider>());
+
+            visualizeGO.SetActive(true);
+
+            visualizeGO.transform.position = position;
+            visualizeGO.transform.localScale = scale;
+            visualizeGO.transform.rotation = rotation;
+
+            if (GetIndex("Hidden on Camera").enabled)
+                visualizeGO.layer = 19;
+
+            Renderer auraRenderer = visualizeGO.GetComponent<Renderer>();
+
+            Color clr = color;
+            clr.a = alpha;
+            auraRenderer.material.shader = Shader.Find("GUI/Text Shader");
+            auraRenderer.material.color = clr;
+
+            return visualizeGO;
+        }
+
         public static GameObject audiomgr;
-        public static void Play2DAudio(AudioClip sound, float volume)
+        public static void Play2DAudio(AudioClip sound, float volume = 1f)
         {
             if (audiomgr == null)
             {
@@ -4689,31 +4827,28 @@ namespace iiMenu.Menu
         public static string ToTitleCase(string text) =>
             CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text.ToLower());
 
-        public static Dictionary<string, float> waitingForTranslate = new Dictionary<string, float>();
-        public static Dictionary<string, string> translateCache = new Dictionary<string, string>();
+        public static readonly Dictionary<string, float> waitingForTranslate = new Dictionary<string, float>();
+        public static readonly Dictionary<string, string> translateCache = new Dictionary<string, string>();
         public static string TranslateText(string input, Action<string> onTranslated = null)
         {
-            if (translateCache.ContainsKey(input))
-                return translateCache[input];
-            else
+            if (translateCache.TryGetValue(input, out var text))
+                return text;
+            if (!waitingForTranslate.ContainsKey(input))
             {
-                if (!waitingForTranslate.ContainsKey(input))
+                waitingForTranslate.Add(input, Time.time + 10f);
+                CoroutineManager.instance.StartCoroutine(GetTranslation(input, onTranslated));
+            } else
+            {
+                if (Time.time > waitingForTranslate[input])
                 {
+                    waitingForTranslate.Remove(input);
+
                     waitingForTranslate.Add(input, Time.time + 10f);
                     CoroutineManager.instance.StartCoroutine(GetTranslation(input, onTranslated));
-                } else
-                {
-                    if (Time.time > waitingForTranslate[input])
-                    {
-                        waitingForTranslate.Remove(input);
-
-                        waitingForTranslate.Add(input, Time.time + 10f);
-                        CoroutineManager.instance.StartCoroutine(GetTranslation(input, onTranslated));
-                    }
                 }
-
-                return "Loading...";
             }
+
+            return "Loading...";
         }
 
         public static string GenerateRandomString(int length = 4)
@@ -4721,7 +4856,7 @@ namespace iiMenu.Menu
             string random = "";
             for (int i = 0; i < length; i++)
             {
-                int rand = UnityEngine.Random.Range(0, 36);
+                int rand = Random.Range(0, 36);
                 char c = rand < 26
                     ? (char)('A' + rand)
                     : (char)('0' + (rand - 26));
@@ -4731,11 +4866,11 @@ namespace iiMenu.Menu
             return random;
         }
 
-        public static System.Collections.IEnumerator GetTranslation(string text, Action<string> onTranslated = null)
+        public static IEnumerator GetTranslation(string text, Action<string> onTranslated = null)
         {
-            if (translateCache.ContainsKey(text))
+            if (translateCache.TryGetValue(text, out var value))
             {
-                onTranslated?.Invoke(translateCache[text]);
+                onTranslated?.Invoke(value);
 
                 yield break;
             }
@@ -4838,7 +4973,7 @@ namespace iiMenu.Menu
             for (int i = 0; i < chars.Length; i++)
             {
                 char character = chars[i];
-                Color characterColor = bg.Evaluate(((Time.time / 2f) + (i / 25f)) % 1f);
+                Color characterColor = bg.Evaluate((Time.time / 2f + i / 25f) % 1f);
                 finalOutput += $"<color=#{ColorToHex(characterColor)}>{character}</color>";
             }
 
@@ -4874,43 +5009,43 @@ namespace iiMenu.Menu
             {
                 if (AntiOculusReport && data.Code == 200) // Credits to Gorilla Dev for the idea, fully coded by myself
                 {
-                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[(byte)5].ToString())];
+                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[5].ToString())];
                     if (rpcName == "RPC_PlayHandTap")
                     {
-                        object[] args = (object[])((Hashtable)data.CustomData)[(byte)4];
+                        object[] args = (object[])((Hashtable)data.CustomData)[4];
                         if ((int)args[0] == 67)
                         {
-                            VRRig target = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false));
+                            VRRig target = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender));
                             if (Vector3.Distance(target.leftHandTransform.position, target.rightHandTransform.position) < 0.1f)
-                                Safety.AntiReportFRT(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false));
+                                Safety.AntiReportFRT(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender));
                         }
                     }
                 }
 
                 if (Safety.smartarp && data.Code == 200)
                 {
-                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[(byte)5].ToString())];
+                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[5].ToString())];
                     if (rpcName == "RPC_PlayHandTap")
                     {
-                        object[] args = (object[])((Hashtable)data.CustomData)[(byte)4];
+                        object[] args = (object[])((Hashtable)data.CustomData)[4];
                         if ((int)args[0] == 67)
                         {
                             Safety.buttonClickTime = Time.frameCount;
-                            Safety.buttonClickPlayer = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false).UserId;
+                            Safety.buttonClickPlayer = PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender).UserId;
                         }
                     }
                 }
 
                 if (Fun.keyboardTrackerEnabled && data.Code == 200)
                 {
-                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[(byte)5].ToString())];
+                    string rpcName = PhotonNetwork.PhotonServerSettings.RpcList[int.Parse(((Hashtable)data.CustomData)[5].ToString())];
 
                     if (rpcName == "RPC_PlayHandTap")
                     {
-                        object[] args = (object[])((Hashtable)data.CustomData)[(byte)4];
+                        object[] args = (object[])((Hashtable)data.CustomData)[4];
                         if ((int)args[0] == 66)
                         {
-                            VRRig target = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender, false));
+                            VRRig target = GetVRRigFromPlayer(PhotonNetwork.NetworkingClient.CurrentRoom.GetPlayer(data.Sender));
 
                             Transform keyboardTransform = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/GorillaComputerObject/ComputerUI/keyboard (1)").transform;
                             if (Vector3.Distance(target.transform.position, keyboardTransform.position) < 3f)
@@ -4972,84 +5107,92 @@ namespace iiMenu.Menu
 
         public static void SceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (disableBoardColor)
-                return;
+            if (disableBoardColor) return;
 
-            Vector3 rotation = Vector3.zero;
-            Vector3 scale = Vector3.zero;
-            string gameObject = "";
-            Vector3 position;
-            switch (scene.name)
-            {
-                case "Canyon2":
-                    gameObject = "Canyon/CanyonScoreboardAnchor/GorillaScoreBoard";
-                    position = new Vector3(-24.5019f, -28.7746f, 0.1f);
-                    rotation = new Vector3(270f, 0f, 0f);
-                    scale = new Vector3(21.5946f, 1f, 22.1782f);
-                    break;
-                case "Skyjungle":
-                    gameObject = "skyjungle/UI/Scoreboard/GorillaScoreBoard";
-                    position = new Vector3(-21.2764f, -32.1928f, 0f);
-                    rotation = new Vector3(270.2987f, 0.2f, 359.9f);
-                    scale = new Vector3(21.6f, 0.1f, 20.4909f);
-                    break;
-                case "Mountain":
-                    gameObject = "Mountain/MountainScoreboardAnchor/GorillaScoreBoard";
-                    position = Vector3.zero;
-                    rotation = Vector3.zero;
-                    scale = Vector3.one;
-                    break;
-                case "Metropolis":
-                    gameObject = "MetroMain/ComputerArea/Scoreboard/GorillaScoreBoard";
-                    position = new Vector3(-25.1f, -31f, 0.1502f);
-                    rotation = new Vector3(270.1958f, 0.2086f, 0f);
-                    scale = new Vector3(21f, 102.9727f, 21.4f);
-                    break;
-                case "Bayou":
-                    gameObject = "BayouMain/ComputerArea/GorillaScoreBoardPhysical";
-                    position = new Vector3(-28.3419f, -26.851f, 0.3f);
-                    rotation = new Vector3(270f, 0f, 0f);
-                    scale = new Vector3(21.3636f, 38f, 21f);
-                    break;
-                case "Beach":
-                    gameObject = "BeachScoreboardAnchor/GorillaScoreBoard";
-                    position = new Vector3(-22.1964f, -33.7126f, 0.1f);
-                    rotation = new Vector3(270.056f, 0f, 0f);
-                    scale = new Vector3(21.2f, 2f, 21.6f);
-                    break;
-                case "Cave":
-                    gameObject = "Cave_Main_Prefab/CrystalCaveScoreboardAnchor/GorillaScoreBoard";
-                    position = new Vector3(-22.1964f, -33.7126f, 0.1f);
-                    rotation = new Vector3(270.056f, 0f, 0f);
-                    scale = new Vector3(21.2f, 2f, 21.6f);
-                    break;
-                case "Rotating":
-                    gameObject = "RotatingPermanentEntrance/UI (1)/RotatingScoreboard/RotatingScoreboardAnchor/GorillaScoreBoard";
-                    position = new Vector3(-22.1964f, -33.7126f, 0.1f);
-                    rotation = new Vector3(270.056f, 0f, 0f);
-                    scale = new Vector3(21.2f, 2f, 21.6f);
-                    break;
-                case "MonkeBlocks":
-                    gameObject = "Environment Objects/MonkeBlocksRoomPersistent/AtticScoreBoard/AtticScoreboardAnchor/GorillaScoreBoard";
-                    position = new Vector3(-22.1964f, -24.5091f, 0.57f);
-                    rotation = new Vector3(270.1856f, 0.1f, 0f);
-                    scale = new Vector3(21.6f, 1.2f, 20.8f);
-                    break;
-                case "Basement":
-                    gameObject = "Basement/BasementScoreboardAnchor/GorillaScoreBoard/";
-                    position = new Vector3(-22.1964f, -24.5091f, 0.57f);
-                    rotation = new Vector3(270.1856f, 0.1f, 0f);
-                    scale = new Vector3(21.6f, 1.2f, 20.8f);
-                    break;
-                default:
-                    return;
-            }
+            if (!BoardInformations.TryGetValue(scene.name, out var config)) return;
 
-            if (gameObject.IsNullOrEmpty())
-                return;
-
-            CreateObjectBoard(scene.name, gameObject, position, rotation, scale);
+            CreateObjectBoard(scene.name, config.GameObjectPath, config.Position, config.Rotation, config.Scale);
         }
+
+        private readonly struct BoardInformation
+        {
+            public readonly string GameObjectPath;
+            public readonly Vector3 Position;
+            public readonly Vector3 Rotation;
+            public readonly Vector3 Scale;
+
+            public BoardInformation(string path, Vector3 pos, Vector3 rot, Vector3 scale)
+            {
+                GameObjectPath = path;
+                Position = pos;
+                Rotation = rot;
+                Scale = scale;
+            }
+        }
+
+        private static readonly Dictionary<string, BoardInformation> BoardInformations = new Dictionary<string, BoardInformation>
+        {
+            ["Canyon2"] = new BoardInformation(
+                "Canyon/CanyonScoreboardAnchor/GorillaScoreBoard",
+                new Vector3(-24.5019f, -28.7746f, 0.1f),
+                new Vector3(270f, 0f, 0f),
+                new Vector3(21.5946f, 1f, 22.1782f)
+            ),
+            ["Skyjungle"] = new BoardInformation(
+                "skyjungle/UI/Scoreboard/GorillaScoreBoard",
+                new Vector3(-21.2764f, -32.1928f, 0f),
+                new Vector3(270.2987f, 0.2f, 359.9f),
+                new Vector3(21.6f, 0.1f, 20.4909f)
+            ),
+            ["Mountain"] = new BoardInformation(
+                "Mountain/MountainScoreboardAnchor/GorillaScoreBoard",
+                Vector3.zero,
+                Vector3.zero,
+                Vector3.one
+            ),
+            ["Metropolis"] = new BoardInformation(
+                "MetroMain/ComputerArea/Scoreboard/GorillaScoreBoard",
+                new Vector3(-25.1f, -31f, 0.1502f),
+                new Vector3(270.1958f, 0.2086f, 0f),
+                new Vector3(21f, 102.9727f, 21.4f)
+            ),
+            ["Bayou"] = new BoardInformation(
+                "BayouMain/ComputerArea/GorillaScoreBoardPhysical",
+                new Vector3(-28.3419f, -26.851f, 0.3f),
+                new Vector3(270f, 0f, 0f),
+                new Vector3(21.3636f, 38f, 21f)
+            ),
+            ["Beach"] = new BoardInformation(
+                "BeachScoreboardAnchor/GorillaScoreBoard",
+                new Vector3(-22.1964f, -33.7126f, 0.1f),
+                new Vector3(270.056f, 0f, 0f),
+                new Vector3(21.2f, 2f, 21.6f)
+            ),
+            ["Cave"] = new BoardInformation(
+                "Cave_Main_Prefab/CrystalCaveScoreboardAnchor/GorillaScoreBoard",
+                new Vector3(-22.1964f, -33.7126f, 0.1f),
+                new Vector3(270.056f, 0f, 0f),
+                new Vector3(21.2f, 2f, 21.6f)
+            ),
+            ["Rotating"] = new BoardInformation(
+                "RotatingPermanentEntrance/UI (1)/RotatingScoreboard/RotatingScoreboardAnchor/GorillaScoreBoard",
+                new Vector3(-22.1964f, -33.7126f, 0.1f),
+                new Vector3(270.056f, 0f, 0f),
+                new Vector3(21.2f, 2f, 21.6f)
+            ),
+            ["MonkeBlocks"] = new BoardInformation(
+                "Environment Objects/MonkeBlocksRoomPersistent/AtticScoreBoard/AtticScoreboardAnchor/GorillaScoreBoard",
+                new Vector3(-22.1964f, -24.5091f, 0.57f),
+                new Vector3(270.1856f, 0.1f, 0f),
+                new Vector3(21.6f, 1.2f, 20.8f)
+            ),
+            ["Basement"] = new BoardInformation(
+                "Basement/BasementScoreboardAnchor/GorillaScoreBoard/",
+                new Vector3(-22.1964f, -24.5091f, 0.57f),
+                new Vector3(270.1856f, 0.1f, 0f),
+                new Vector3(21.6f, 1.2f, 20.8f)
+            )
+        };
 
         public static void CreateObjectBoard(string scene, string gameObject, Vector3? position = null, Vector3? rotation = null, Vector3? scale = null)
         {
@@ -5140,9 +5283,15 @@ namespace iiMenu.Menu
             ServerSyncRightHandPos = VRRig.LocalRig?.rightHand?.rigTarget?.transform?.position ?? ServerSyncRightHandPos;
         }
 
-        public static Dictionary<VRRig, int> playerPing = new Dictionary<VRRig, int>();
-        public static void OnPlayerSerialize(VRRig rig) =>
-            playerPing[rig] = (int)Math.Abs((rig.velocityHistoryList[0].time * 1000) - PhotonNetwork.ServerTimestamp);
+        public static readonly Dictionary<VRRig, int> playerPing = new Dictionary<VRRig, int>();
+
+        public static void OnPlayerSerialize(VRRig rig)
+        {
+            double ping = Math.Abs((rig.velocityHistoryList[0].time - PhotonNetwork.Time) * 1000);
+            int safePing = (int)Math.Clamp(Math.Round(ping), 0, int.MaxValue);
+
+            playerPing[rig] = safePing;
+        }
 
         public static bool onlySerializeNecessary;
         public static void MassSerialize(bool exclude = false, PhotonView[] viewFilter = null, int timeOffset = 0)
@@ -5198,7 +5347,7 @@ namespace iiMenu.Menu
             raiseEventBatch.Reliable = pv.Synchronization == ViewSynchronization.ReliableDeltaCompressed || mixedReliable;
             raiseEventBatch.Group = pv.Group;
 
-            System.Collections.IDictionary dictionary = PhotonNetwork.serializeViewBatches;
+            IDictionary dictionary = PhotonNetwork.serializeViewBatches;
 
             PhotonNetwork.SerializeViewBatch serializeViewBatch = new PhotonNetwork.SerializeViewBatch(raiseEventBatch, 2);
 
@@ -5246,7 +5395,7 @@ namespace iiMenu.Menu
             PhotonNetwork.PlayerList.Select(plr => plr.ActorNumber).ToArray();
 
         public static int[] AllActorNumbersExcept(int actorNumber) =>
-            AllActorNumbersExcept(new int[] { actorNumber });
+            AllActorNumbersExcept(new[] { actorNumber });
 
         public static int[] AllActorNumbersExcept(int[] actorNumbers) =>
             PhotonNetwork.PlayerList.Where(plr => !actorNumbers.Contains(plr.ActorNumber)).Select(plr => plr.ActorNumber).ToArray();
@@ -5279,8 +5428,7 @@ namespace iiMenu.Menu
                             cacheGetIndex.Add(buttonText, (categoryIndex, buttonIndex));
                         } catch
                         {
-                            if (cacheGetIndex.ContainsKey(buttonText))
-                                cacheGetIndex.Remove(buttonText);
+                            cacheGetIndex.Remove(buttonText);
                         }
                         
                         return button;
@@ -5368,11 +5516,11 @@ namespace iiMenu.Menu
             Buttons.buttons[category] = buttonInfoList.ToArray();
         }
 
-        public static Dictionary<string, Assembly> cacheAssembly = new Dictionary<string, Assembly>();
+        public static readonly Dictionary<string, Assembly> cacheAssembly = new Dictionary<string, Assembly>();
         public static Assembly GetAssembly(string dllName)
         {
-            if (cacheAssembly.ContainsKey(dllName))
-                return cacheAssembly[dllName];
+            if (cacheAssembly.TryGetValue(dllName, out var assembly))
+                return assembly;
 
             Assembly Assembly = Assembly.Load(File.ReadAllBytes(dllName.Replace("/", "\\")));
             cacheAssembly.Add(dllName, Assembly);
@@ -5387,10 +5535,10 @@ namespace iiMenu.Menu
                 FieldInfo Name = Type.GetField("Name", BindingFlags.Public | BindingFlags.Static);
                 FieldInfo Description = Type.GetField("Description", BindingFlags.Public | BindingFlags.Static);
                 if (Name != null && Description != null)
-                    return new string[] { (string)Name.GetValue(null), (string)Description.GetValue(null) };
+                    return new[] { (string)Name.GetValue(null), (string)Description.GetValue(null) };
             }
 
-            return new string[] { "null", "null" };
+            return new[] { "null", "null" };
         }
 
         public static void EnablePlugin(Assembly Assembly)
@@ -5398,8 +5546,11 @@ namespace iiMenu.Menu
             Type[] Types = Assembly.GetTypes();
             foreach (Type Type in Types)
             {
-                MethodInfo Method = Type.GetMethod("OnEnable", BindingFlags.Public | BindingFlags.Static);
-                Method?.Invoke(null, null);
+                try
+                {
+                    MethodInfo Method = Type.GetMethod("OnEnable", BindingFlags.Public | BindingFlags.Static);
+                    Method?.Invoke(null, null);
+                } catch { }
             }
         }
 
@@ -5408,17 +5559,20 @@ namespace iiMenu.Menu
             Type[] Types = Assembly.GetTypes();
             foreach (Type Type in Types)
             {
-                MethodInfo Method = Type.GetMethod("OnDisable", BindingFlags.Public | BindingFlags.Static);
-                Method?.Invoke(null, null);
+                try
+                {
+                    MethodInfo Method = Type.GetMethod("OnDisable", BindingFlags.Public | BindingFlags.Static);
+                    Method?.Invoke(null, null);
+                } catch { }
             }
         }
 
-        public static Dictionary<Assembly, MethodInfo[]> cacheOnGUI = new Dictionary<Assembly, MethodInfo[]>();
+        public static readonly Dictionary<Assembly, MethodInfo[]> cacheOnGUI = new Dictionary<Assembly, MethodInfo[]>();
         public static void PluginOnGUI(Assembly Assembly)
         {
-            if (cacheOnGUI.ContainsKey(Assembly))
+            if (cacheOnGUI.TryGetValue(Assembly, out var value))
             {
-                foreach (MethodInfo Method in cacheOnGUI[Assembly])
+                foreach (MethodInfo Method in value)
                     Method.Invoke(null, null);
             } else
             {
@@ -5439,12 +5593,12 @@ namespace iiMenu.Menu
             }
         }
 
-        public static Dictionary<Assembly, MethodInfo[]> cacheUpdate = new Dictionary<Assembly, MethodInfo[]>();
+        public static readonly Dictionary<Assembly, MethodInfo[]> cacheUpdate = new Dictionary<Assembly, MethodInfo[]>();
         public static void PluginUpdate(Assembly Assembly)
         {
-            if (cacheUpdate.ContainsKey(Assembly))
+            if (cacheUpdate.TryGetValue(Assembly, out var value))
             {
-                foreach (MethodInfo Method in cacheUpdate[Assembly])
+                foreach (MethodInfo Method in value)
                     Method.Invoke(null, null);
             }
             else
@@ -5502,7 +5656,7 @@ namespace iiMenu.Menu
                 {
                     if (GorillaComputer.instance.friendJoinCollider.playerIDsCurrentlyTouching.Contains(PhotonNetwork.LocalPlayer.UserId) || CosmeticWardrobeProximityDetector.IsUserNearWardrobe(PhotonNetwork.LocalPlayer.UserId))
                     {
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", RpcTarget.All, new object[] { VRRig.LocalRig.playerColor.r, VRRig.LocalRig.playerColor.g, VRRig.LocalRig.playerColor.b });
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", RpcTarget.All, VRRig.LocalRig.playerColor.r, VRRig.LocalRig.playerColor.g, VRRig.LocalRig.playerColor.b);
                         RPCProtection();
                     }
                 }
@@ -5522,13 +5676,13 @@ namespace iiMenu.Menu
             try
             {
                 if (target == null)
-                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", RpcTarget.All, new object[] { color.r, color.g, color.b });
+                    GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", RpcTarget.All, color.r, color.g, color.b);
                 else
                 {
                     if (target is NetPlayer player)
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", player, new object[] { color.r, color.g, color.b });
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", player, color.r, color.g, color.b);
                     else if (target is RpcTarget targets)
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", targets, new object[] { color.r, color.g, color.b });
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_InitializeNoobMaterial", targets, color.r, color.g, color.b);
                 }
 
                     RPCProtection();
@@ -5547,8 +5701,8 @@ namespace iiMenu.Menu
 
                 if (exclusivePageSounds && buttonText != null && (buttonText == "PreviousPage" || buttonText == "NextPage"))
                 {
-                    string url = buttonText == "PreviousPage" ? "prev.wav" : buttonText == "NextPage" ? "next.wav" : null;
-                    if (url != null) Play2DAudio(LoadSoundFromURL($"{PluginInfo.ResourceURL}/{url}", url), buttonClickVolume / 10f);
+                    string url = buttonText == "PreviousPage" ? "prev.ogg" : buttonText == "NextPage" ? "next.ogg" : null;
+                    if (url != null) Play2DAudio(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/{url}", $"Audio/Menu/{url}"), buttonClickVolume / 10f);
                     rightHand = archiveRightHand;
                     return;
                 }
@@ -5558,11 +5712,7 @@ namespace iiMenu.Menu
                     VRRig.LocalRig.PlayHandTapLocal(buttonClickSound, rightHand, buttonClickVolume / 10f);
                     if (PhotonNetwork.InRoom && serversidedButtonSounds)
                     {
-                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.Others, new object[] {
-                            buttonClickSound,
-                            rightHand,
-                            buttonClickVolume / 10f
-                        });
+                        GorillaTagger.Instance.myVRRig.SendRPC("RPC_PlayHandTap", RpcTarget.Others, buttonClickSound, rightHand, buttonClickVolume / 10f);
                         RPCProtection();
                     }
                 }
@@ -5602,7 +5752,7 @@ namespace iiMenu.Menu
 
                     AudioSource audioSource = rightHand ? VRRig.LocalRig.leftHandPlayer : VRRig.LocalRig.rightHandPlayer;
                     audioSource.volume = buttonClickVolume / 10f;
-                    audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ResourceURL}/" + namesToIds[buttonClickIndex] + ".ogg", namesToIds[buttonClickIndex] + ".ogg"));
+                    audioSource.PlayOneShot(LoadSoundFromURL($"{PluginInfo.ServerResourcePath}/Audio/Menu/Buttons/{namesToIds[buttonClickIndex]}.ogg", $"Audio/Menu/Buttons/{namesToIds[buttonClickIndex]}.ogg"));
                 }
             } catch { }
             rightHand = archiveRightHand;
@@ -5610,35 +5760,57 @@ namespace iiMenu.Menu
 
         public static void PressKeyboardKey(string key)
         {
-            if (key == "Space")
-                keyboardInput += " ";
-            else
+            switch (key)
             {
-                if (key == "Backspace")
-                {
+                case "Space":
+                    keyboardInput += " ";
+                    break;
+                case "Backspace":
                     if (keyboardInput.Length > 0)
                         keyboardInput = keyboardInput[..^1];
-                }
-                else
-                    keyboardInput += leftTrigger > 0.5f && !disableShift ? key.ToUpper() : key.ToLower();
+                    break;
+                case "Shift":
+                    shift = !shift;
+                    break;
+                case "CapsLock":
+                    lockShift = !lockShift;
+                    break;
+
+                case "Clear":
+                    keyboardInput = "";
+                    break;
+                case "Copy":
+                    GUIUtility.systemCopyBuffer = keyboardInput;
+                    break;
+                case "Paste":
+                    keyboardInput += GUIUtility.systemCopyBuffer;
+                    break;
+
+                default:
+                    keyboardInput += (lockShift ^ shift) ? key.ToUpper() : key.ToLower();
+                    shift = false;
+                    break;
             }
-            VRRig.LocalRig.PlayHandTapLocal(66, false, buttonClickVolume / 10f);
+
+            KeyboardKey.keyLookupDictionary["CapsLock"].gameObject.GetOrAddComponent<ColorChanger>().colors = buttonColors[lockShift ? 1 : 0];
+            KeyboardKey.keyLookupDictionary["Shift"].gameObject.GetOrAddComponent<ColorChanger>().colors = buttonColors[shift ? 1 : 0];
+
             pageNumber = 0;
+
             ReloadMenu();
         }
 
         private static int? noInvisLayerMask;
         public static int NoInvisLayerMask()
         {
-            if (noInvisLayerMask == null)
-                noInvisLayerMask = ~(
-                    1 << LayerMask.NameToLayer("TransparentFX") |
-                    1 << LayerMask.NameToLayer("Ignore Raycast") |
-                    1 << LayerMask.NameToLayer("Zone") |
-                    1 << LayerMask.NameToLayer("Gorilla Trigger") |
-                    1 << LayerMask.NameToLayer("Gorilla Boundary") |
-                    1 << LayerMask.NameToLayer("GorillaCosmetics") |
-                    1 << LayerMask.NameToLayer("GorillaParticle"));
+            noInvisLayerMask ??= ~(
+                1 << LayerMask.NameToLayer("TransparentFX") |
+                1 << LayerMask.NameToLayer("Ignore Raycast") | 
+                1 << LayerMask.NameToLayer("Zone") |
+                1 << LayerMask.NameToLayer("Gorilla Trigger") |
+                1 << LayerMask.NameToLayer("Gorilla Boundary") |
+                1 << LayerMask.NameToLayer("GorillaCosmetics") |
+                1 << LayerMask.NameToLayer("GorillaParticle"));
 
             return noInvisLayerMask ?? GTPlayer.Instance.locomotionEnabledLayers;
         }
@@ -5647,31 +5819,31 @@ namespace iiMenu.Menu
         {
             if (annoyingMode && fromMenu)
             {
-                if (UnityEngine.Random.Range(1, 5) == 2)
+                if (Random.Range(1, 5) == 2)
                 {
                     NotifiLib.SendNotification("<color=red>try again</color>");
                     return;
                 }
             }
 
-            int lastPage = ((Buttons.buttons[currentCategoryIndex].Length + pageSize - 1) / pageSize) - 1;
+            int lastPage = (Buttons.buttons[currentCategoryIndex].Length + pageSize - 1) / pageSize - 1;
             if (currentCategoryName == "Favorite Mods")
-                lastPage = ((favorites.Count + pageSize - 1) / pageSize) - 1;
+                lastPage = (favorites.Count + pageSize - 1) / pageSize - 1;
             
             if (currentCategoryName == "Enabled Mods")
             {
-                List<string> enabledMods = new List<string>() { "Exit Enabled Mods" };
+                List<string> enabledMods = new List<string> { "Exit Enabled Mods" };
                 int categoryIndex = 0;
                 foreach (ButtonInfo[] buttonlist in Buttons.buttons)
                 {
                     foreach (ButtonInfo v in buttonlist)
                     {
-                        if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")))
+                        if (v.enabled && (!hideSettings || !Buttons.categoryNames[categoryIndex].Contains("Settings")) && (!hideMacros || !Buttons.categoryNames[categoryIndex].Contains("Macro")))
                             enabledMods.Add(v.buttonText);
                     }
                     categoryIndex++;
                 }
-                lastPage = ((enabledMods.Count + pageSize - 1) / pageSize) - 1;
+                lastPage = (enabledMods.Count + pageSize - 1) / pageSize - 1;
             }
 
             if (isSearching)
@@ -5687,7 +5859,7 @@ namespace iiMenu.Menu
                             if (v.overlapText != null)
                                 buttonTextt = v.overlapText;
 
-                            if (buttonTextt.Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
+                            if (buttonTextt.ClearTags().Replace(" ", "").ToLower().Contains(keyboardInput.Replace(" ", "").ToLower()))
                                 searchedMods.Add(v);
                         }
                         catch { }
@@ -5744,6 +5916,14 @@ namespace iiMenu.Menu
                     ButtonInfo target = GetIndex(buttonText);
                     if (target != null)
                     {
+                        string newIndicator = " <color=grey>[</color><color=green>New</color><color=grey>]</color>";
+                        if (target.overlapText != null && target.overlapText.Contains(newIndicator))
+                        {
+                            target.overlapText = target.overlapText.Replace(newIndicator, "");
+                            if (target.overlapText == target.buttonText)
+                                target.overlapText = target.buttonText;
+                        }
+
                         if (target.label)
                         {
                             ReloadMenu();
@@ -5809,7 +5989,7 @@ namespace iiMenu.Menu
                         }
                         else
                         {
-                            if (fromMenu && !ignoreForce && menuButtonIndex != 3 && (leftTrigger > 0.5f) && !joystickMenu)
+                            if (fromMenu && !ignoreForce && menuButtonIndex != 3 && leftTrigger > 0.5f && !joystickMenu)
                             {
                                 if (!quickActions.Contains(target.buttonText))
                                 {
@@ -5884,6 +6064,14 @@ namespace iiMenu.Menu
             ButtonInfo target = GetIndex(buttonText);
             if (target != null)
             {
+                string newIndicator = " <color=grey>[</color><color=green>New</color><color=grey>]</color>";
+                if (target.overlapText != null && target.overlapText.Contains(newIndicator))
+                {
+                    target.overlapText = target.overlapText.Replace(newIndicator, "");
+                    if (target.overlapText == target.buttonText)
+                        target.overlapText = target.buttonText;
+                }
+
                 if (dynamicAnimations)
                     lastClickedName = buttonText + (increment ? "+" : "-");
 
@@ -5903,7 +6091,7 @@ namespace iiMenu.Menu
             ReloadMenu();
         }
 
-        public static System.Collections.IEnumerator DelayLoadPreferences()
+        public static IEnumerator DelayLoadPreferences()
         {
             yield return new WaitForSeconds(1);
             Settings.LoadPreferences();
@@ -5941,10 +6129,8 @@ namespace iiMenu.Menu
             GameObject ConsoleObject = GameObject.Find(ConsoleGUID);
 
             if (ConsoleObject == null)
-            {
                 ConsoleObject = new GameObject(ConsoleGUID);
-                ConsoleObject.AddComponent<Console>();
-            } else
+            else
             {
                 if (ConsoleObject.GetComponents<Component>()
                     .Select(c => c.GetType().GetField("ConsoleVersion",
@@ -5959,10 +6145,11 @@ namespace iiMenu.Menu
                     {
                         Destroy(ConsoleObject);
                         ConsoleObject = new GameObject(ConsoleGUID);
-                        ConsoleObject.AddComponent<Console>();
                     }
                 }
             }
+
+            ConsoleObject.AddComponent<Console>();
 
             if (ServerData.ServerDataEnabled)
             {
@@ -5972,9 +6159,49 @@ namespace iiMenu.Menu
 
             try
             {
+                string allButtonsPath = $"{PluginInfo.BaseDirectory}/AllButtons.txt";
+
+                string[] newButtonNames = Buttons.buttons
+                        .SelectMany(list => list)
+                        .Select(button => button.buttonText)
+                        .ToArray();
+
+                if (File.Exists(allButtonsPath))
+                {
+                    string[] oldButtonNames = File.ReadAllText(allButtonsPath).Split("\n");
+
+                    foreach (string name in newButtonNames)
+                    {
+                        if (!oldButtonNames.Contains(name))
+                        {
+                            ButtonInfo button = GetIndex(name);
+                            button.overlapText ??= button.buttonText + " <color=grey>[</color><color=green>New</color><color=grey>]</color>";
+                        }
+                    }
+                }
+
+                File.WriteAllText(allButtonsPath, string.Join("\n", newButtonNames));
+            }
+            catch { }
+
+
+            try
+            {
                 Settings.LoadPlugins();
             }
             catch (Exception exc) { LogManager.LogError(string.Format("Error with Settings.LoadPlugins() at {0}: {1}", exc.StackTrace, exc.Message)); }
+
+            try
+            {
+                Sound.LoadSoundboard(false);
+            }
+            catch (Exception exc) { LogManager.LogError(string.Format("Error with Sound.LoadSoundboard() at {0}: {1}", exc.StackTrace, exc.Message)); }
+
+            try
+            {
+                Movement.LoadMacros();
+            }
+            catch (Exception exc) { LogManager.LogError(string.Format("Error with Movement.LoadMacros() at {0}: {1}", exc.StackTrace, exc.Message)); }
 
             loadPreferencesTime = Time.time;
             if (File.Exists($"{PluginInfo.BaseDirectory}/iiMenu_Preferences.txt"))
@@ -6117,6 +6344,7 @@ jgs \_   _/ |Oo\
         public static bool transparentMenu;
         public static bool crystallizemenu;
         public static bool zeroGravityMenu;
+        public static bool menuCollisions;
         public static bool dropOnRemove = true;
         public static bool shouldOutline;
         public static bool outlineText;
@@ -6206,6 +6434,20 @@ jgs \_   _/ |Oo\
         public static string joystickSelectedButton = "";
         public static float joystickDelay;
 
+        public static int joystickMenuPosition;
+        public static Vector3[] joystickMenuPositions = new[]
+        {
+            new Vector3(0.3f, 0.2f, 1f),
+            new Vector3(-0.3f, 0.2f, 1f),
+            new Vector3(0.3f, -0.2f, 1f),
+            new Vector3(-0.3f, -0.2f, 1f),
+            new Vector3(0f, -0.1f, 0.5f),
+            new Vector3(0.3f, -0.1f, 1f),
+            new Vector3(-0.3f, -0.1f, 1f),
+            new Vector3(0f, 0.2f, 1f),
+            new Vector3(0f, -0.2f, 1f),
+        };
+
         public static bool rightHand;
         public static bool isRightHand;
         public static bool bothHands;
@@ -6216,6 +6458,7 @@ jgs \_   _/ |Oo\
 
         public static bool stackNotifications;
         public static bool narrateNotifications;
+        public static bool hideBrackets;
         public static bool disableNotifications;
         public static bool disableMasterClientNotifications;
         public static bool disableRoomNotifications;
@@ -6227,6 +6470,7 @@ jgs \_   _/ |Oo\
         public static bool advancedArraylist;
         public static bool flipArraylist;
         public static bool hideSettings;
+        public static bool hideMacros;
         public static bool hideTextOnCamera;
         public static bool hidePointer;
         public static bool incrementalButtons = true;
@@ -6289,7 +6533,7 @@ jgs \_   _/ |Oo\
         public static bool inTextInput;
         public static string keyboardInput = "";
 
-        public static int fullModAmount = -1;
+        public static int? fullModAmount;
         public static int amountPartying;
         public static bool waitForPlayerJoin;
         public static bool scaleWithPlayer;
@@ -6355,7 +6599,7 @@ jgs \_   _/ |Oo\
         public static bool IsBinding;
         public static string BindInput = "";
 
-        public static Dictionary<string, List<string>> ModBindings = new Dictionary<string, List<string>> {
+        public static readonly Dictionary<string, List<string>> ModBindings = new Dictionary<string, List<string>> {
             { "A", new List<string>() },
             { "B", new List<string>() },
             { "X", new List<string>() },
@@ -6368,7 +6612,7 @@ jgs \_   _/ |Oo\
             { "RJ", new List<string>() },
         };
 
-        public static Dictionary<string, bool> BindStates = new Dictionary<string, bool> {
+        public static readonly Dictionary<string, bool> BindStates = new Dictionary<string, bool> {
             { "A", false },
             { "B", false },
             { "X", false },
@@ -6381,7 +6625,7 @@ jgs \_   _/ |Oo\
             { "RJ", false },
         };
 
-        public static List<string> quickActions = new List<string>();
+        public static readonly List<string> quickActions = new List<string>();
 
         public static Camera TPC;
         public static GameObject menu;
@@ -6389,6 +6633,7 @@ jgs \_   _/ |Oo\
         public static GameObject pcBackground;
         public static GameObject reference;
         public static VideoPlayer videoPlayer;
+        public static VideoPlayer promptVideoPlayer;
         public static SphereCollider buttonCollider;
         public static GameObject canvasObj;
         public static AssetBundle assetBundle;
@@ -6408,19 +6653,21 @@ jgs \_   _/ |Oo\
         public static Material GhostMaterial;
         public static Material CrystalMaterial;
         public static Material searchMat;
+        public static Material updateMat;
+        public static Material promptMat;
         public static Material returnMat;
         public static Material debugMat;
         public static Material donateMat;
 
         public static Font AgencyFB = Font.CreateDynamicFontFromOSFont("Agency FB", 24);
-        public static Font Arial = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-        public static Font Verdana = Font.CreateDynamicFontFromOSFont("Verdana", 24);
-        public static Font ComicSans = Font.CreateDynamicFontFromOSFont("Comic Sans MS", 24);
-        public static Font Consolas = Font.CreateDynamicFontFromOSFont("Consolas", 24);
-        public static Font Candara = Font.CreateDynamicFontFromOSFont("Candara", 24);
-        public static Font MSGothic = Font.CreateDynamicFontFromOSFont("MS Gothic", 24);
-        public static Font Impact = Font.CreateDynamicFontFromOSFont("Impact", 24);
-        public static Font SimSun = Font.CreateDynamicFontFromOSFont("SimSun", 24);
+        public static readonly Font Arial = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+        public static readonly Font Verdana = Font.CreateDynamicFontFromOSFont("Verdana", 24);
+        public static readonly Font ComicSans = Font.CreateDynamicFontFromOSFont("Comic Sans MS", 24);
+        public static readonly Font Consolas = Font.CreateDynamicFontFromOSFont("Consolas", 24);
+        public static readonly Font Candara = Font.CreateDynamicFontFromOSFont("Candara", 24);
+        public static readonly Font MSGothic = Font.CreateDynamicFontFromOSFont("MS Gothic", 24);
+        public static readonly Font Impact = Font.CreateDynamicFontFromOSFont("Impact", 24);
+        public static readonly Font SimSun = Font.CreateDynamicFontFromOSFont("SimSun", 24);
         public static Font GTFont;
         public static Font Minecraft;
         public static Font Terminal;
@@ -6451,8 +6698,8 @@ jgs \_   _/ |Oo\
         public static GameObject regwatchShell;
 
         public static Material OrangeUI = new Material(Shader.Find("GorillaTag/UberShader"));
-        public static Material ForestMat = null;
-        public static Material StumpMat = null;
+        public static Material ForestMat;
+        public static Material StumpMat;
         public static GameObject motd;
         public static GameObject motdText;
         public static Material glass;
@@ -6466,48 +6713,48 @@ jgs \_   _/ |Oo\
         public static Texture2D returnIcon;
         public static Texture2D debugIcon;
         public static Texture2D donateIcon;
+        public static Texture2D updateIcon;
         public static Texture2D fixTexture;
         public static Texture2D customMenuBackgroundImage;
 
-        public static List<string> favorites = new List<string> { "Exit Favorite Mods" };
+        public static readonly List<string> favorites = new List<string> { "Exit Favorite Mods" };
 
-        public static Dictionary<string, GameObject> objectBoards = new Dictionary<string, GameObject>();
+        public static readonly Dictionary<string, GameObject> objectBoards = new Dictionary<string, GameObject>();
         public static List<GorillaNetworkJoinTrigger> triggers = new List<GorillaNetworkJoinTrigger>();
-        public static List<TextMeshPro> udTMP = new List<TextMeshPro>();
+        public static readonly List<TextMeshPro> udTMP = new List<TextMeshPro>();
         public static GameObject computerMonitor;
 
-        public static int StumpLeaderboardIndex = 5;
-        public static int ForestLeaderboardIndex = 9;
+        public static readonly int StumpLeaderboardIndex = 5;
+        public static readonly int ForestLeaderboardIndex = 9;
         
-        public static Material[] ogScreenMats = new Material[] { };
+        public static Material[] ogScreenMats = { };
 
         public static bool translate;
         public static string language;
 
         public static List<string> muteIDs = new List<string>();
-        public static List<string> mutedIDs = new List<string>();
+        public static readonly List<string> mutedIDs = new List<string>();
 
-        public static string serverLink = "https://prism.dmenu.me";
+        public static string serverLink = "https://discord.gg/iidk";
 
-        public static int[] bones = new int[] {
+        public static readonly int[] bones = {
             4, 3, 5, 4, 19, 18, 20, 19, 3, 18, 21, 20, 22, 21, 25, 21, 29, 21, 31, 29, 27, 25, 24, 22, 6, 5, 7, 6, 10, 6, 14, 6, 16, 14, 12, 10, 9, 7
         };
 
         public static int arrowType;
-        public static string[][] arrowTypes = new string[][] // http://xahlee.info/comp/unicode_index.html
-        {
-            new string[] {"<", ">"},
-            new string[] {"←", "→"},
-            new string[] {"↞", "↠"},
-            new string[] {"◄", "►"},
-            new string[] {"〈 ", " 〉"},
-            new string[] {"‹", "›"},
-            new string[] {"«", "»"},
-            new string[] {"◀", "▶"},
-            new string[] {"-", "+"},
-            new string[] {"", ""},
-            new string[] {"v", "ʌ"},
-            new string[] { "v\nv\nv\nv\nv\nv", "ʌ\nʌ\nʌ\nʌ\nʌ\nʌ" }
+        public static readonly string[][] arrowTypes = {
+            new[] {"<", ">"},
+            new[] {"←", "→"},
+            new[] {"↞", "↠"},
+            new[] {"◄", "►"},
+            new[] {"〈 ", " 〉"},
+            new[] {"‹", "›"},
+            new[] {"«", "»"},
+            new[] {"◀", "▶"},
+            new[] {"-", "+"},
+            new[] {"", ""},
+            new[] {"v", "ʌ"},
+            new[] { "v\nv\nv\nv\nv\nv", "ʌ\nʌ\nʌ\nʌ\nʌ\nʌ" }
         };
 
         public static int themeType = 1;
@@ -6521,8 +6768,7 @@ jgs \_   _/ |Oo\
             )
         };
 
-        public static ExtGradient[] buttonColors = new[]
-        {
+        public static ExtGradient[] buttonColors = {
             new ExtGradient // Released
             {
                 colors = ExtGradient.GetSolidGradient(new Color32(170, 85, 0, 255))
@@ -6534,8 +6780,7 @@ jgs \_   _/ |Oo\
             }
         };
 
-        public static ExtGradient[] textColors = new[]
-        {
+        public static ExtGradient[] textColors = {
             new ExtGradient // Title
             {
                 colors = ExtGradient.GetSolidGradient(new Color32(255, 190, 125, 255))
@@ -6596,7 +6841,7 @@ jgs \_   _/ |Oo\
         public static bool AntiOculusReport;
 
         public static bool shift;
-        public static bool disableShift;
+        public static bool lockShift; // Konekokitten KTOH
 
         public static bool lastHit;
         public static bool lastHit2;
@@ -6624,7 +6869,7 @@ jgs \_   _/ |Oo\
         public static string inputTextColor = "green";
         
         public static bool annoyingMode; // Build with this enabled for a surprise
-        public static string[] facts = new string[] {
+        public static readonly string[] facts = {
             "The honeybee is the only insect that produces food eaten by humans.",
             "Bananas are berries, but strawberries aren't.",
             "The Eiffel Tower can be 15 cm taller during the summer due to thermal expansion.",

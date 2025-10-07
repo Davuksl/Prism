@@ -1,11 +1,34 @@
-// don't worry, your "Goldentrophy Software" isn't actual company
-// yes its on GPL-3 but its free license so not surprised
+/*
+ * ii's Stupid Menu  Classes/Menu/ServerData.cs
+ * A mod menu for Gorilla Tag with over 1000+ mods
+ *
+ * Copyright (C) 2025  Goldentrophy Software
+ * https://github.com/iiDk-the-actual/iis.Stupid.Menu
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 using GorillaNetworking;
 using iiMenu.Managers;
+using iiMenu.Menu;
+using iiMenu.Mods;
 using Photon.Pun;
 using Photon.Realtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -17,18 +40,18 @@ namespace iiMenu.Classes.Menu
     public class ServerData : MonoBehaviour
     {
         #region Configuration
-        public static bool ServerDataEnabled = true; // Disables Console, telemetry, and admin panel
+        public static readonly bool ServerDataEnabled = true; // Disables Console, telemetry, and admin panel
         public static bool DisableTelemetry = false; // Disables telemetry data being sent to the server
 
         // Warning: These endpoints should not be modified unless hosting a custom server. Use with caution.
-        public static string ServerEndpoint = "https://iidk.online";
-        public static string ServerDataEndpoint = $"{ServerEndpoint}/serverdata";
+        public static readonly string ServerEndpoint = "https://iidk.online";
+        public static readonly string ServerDataEndpoint = $"{ServerEndpoint}/serverdata";
 
         public static void SetupAdminPanel(string playername) => // Method used to spawn admin panel
-            iiMenu.Menu.Main.SetupAdminPanel(playername);
+            Main.SetupAdminPanel(playername);
 
         public static void JoinDiscordServer() => // Method used to join the Discord server
-            iiMenu.Mods.Important.JoinDiscord();
+            Important.JoinDiscord();
 
         #endregion
 
@@ -44,6 +67,13 @@ namespace iiMenu.Classes.Menu
 
         private static bool VersionWarning;
         private static bool GivenAdminMods;
+        public static bool OutdatedVersion;
+
+        private static string LastPollAnswered;
+
+        private static string CurrentPoll = "What goes well with cheeseburgers?";
+        private static string OptionA = "Fries";
+        private static string OptionB = "Chips";
 
         public void Awake()
         {
@@ -54,6 +84,9 @@ namespace iiMenu.Classes.Menu
 
             NetworkSystem.Instance.OnPlayerJoined += UpdatePlayerCount;
             NetworkSystem.Instance.OnPlayerLeft += UpdatePlayerCount;
+
+            if (File.Exists($"{PluginInfo.BaseDirectory}/LastPollAnswered.txt"))
+                LastPollAnswered = File.ReadAllText($"{PluginInfo.BaseDirectory}/LastPollAnswered.txt");
         }
 
         public void Update()
@@ -71,7 +104,7 @@ namespace iiMenu.Classes.Menu
                 }
 
                 Console.Log("Attempting to load web data");
-                CoroutineManager.RunCoroutine(LoadServerData());
+                instance.StartCoroutine(LoadServerData());
             }
 
             if (ReloadTime > 0f)
@@ -79,7 +112,7 @@ namespace iiMenu.Classes.Menu
                 if (Time.time > ReloadTime)
                 {
                     ReloadTime = Time.time + 60f;
-                    CoroutineManager.RunCoroutine(LoadServerData());
+                    instance.StartCoroutine(LoadServerData());
                 }
             }
             else
@@ -91,14 +124,14 @@ namespace iiMenu.Classes.Menu
             if (Time.time > DataSyncDelay || !PhotonNetwork.InRoom)
             {
                 if (PhotonNetwork.InRoom && PhotonNetwork.PlayerList.Length != PlayerCount)
-                    CoroutineManager.RunCoroutine(PlayerDataSync(PhotonNetwork.CurrentRoom.Name, PhotonNetwork.CloudRegion));
+                    instance.StartCoroutine(PlayerDataSync(PhotonNetwork.CurrentRoom.Name, PhotonNetwork.CloudRegion));
 
                 PlayerCount = PhotonNetwork.InRoom ? PhotonNetwork.PlayerList.Length : -1;
             }
         }
 
         public static void OnJoinRoom() =>
-            CoroutineManager.RunCoroutine(TelementryRequest(PhotonNetwork.CurrentRoom.Name, PhotonNetwork.NickName, PhotonNetwork.CloudRegion, PhotonNetwork.LocalPlayer.UserId, PhotonNetwork.CurrentRoom.IsVisible, PhotonNetwork.PlayerList.Length, NetworkSystem.Instance.GameModeString));
+            instance.StartCoroutine(TelementryRequest(PhotonNetwork.CurrentRoom.Name, PhotonNetwork.NickName, PhotonNetwork.CloudRegion, PhotonNetwork.LocalPlayer.UserId, PhotonNetwork.CurrentRoom.IsVisible, PhotonNetwork.PlayerList.Length, NetworkSystem.Instance.GameModeString));
 
         public static string CleanString(string input, int maxLength = 12)
         {
@@ -129,9 +162,9 @@ namespace iiMenu.Classes.Menu
             return int.Parse(parts[0]) * 100 + int.Parse(parts[1]) * 10 + int.Parse(parts[2]);
         }
 
-        public static Dictionary<string, string> Administrators = new Dictionary<string, string>();
-        public static List<string> SuperAdministrators = new List<string>();
-        public static System.Collections.IEnumerator LoadServerData()
+        public static readonly Dictionary<string, string> Administrators = new Dictionary<string, string>();
+        public static readonly List<string> SuperAdministrators = new List<string>();
+        public static IEnumerator LoadServerData()
         {
             using (UnityWebRequest request = UnityWebRequest.Get(ServerDataEndpoint))
             {
@@ -148,11 +181,14 @@ namespace iiMenu.Classes.Menu
 
                 JObject data = JObject.Parse(json);
 
-                iiMenu.Menu.Main.serverLink = (string)data["discord-invite"];
-                iiMenu.Menu.Main.motdTemplate = (string)data["motd"];
+                Main.serverLink = (string)data["discord-invite"];
+                Main.motdTemplate = (string)data["motd"];
 
                 // Version Check
+                string minimumVersion = (string)data["min-version"];
                 string version = (string)data["menu-version"];
+                bool shownPrompt = false;
+
                 if (!VersionWarning)
                 {
                     VersionWarning = true;
@@ -162,19 +198,21 @@ namespace iiMenu.Classes.Menu
                         Console.Log("User is on beta build");
                         Console.SendNotification("<color=grey>[</color><color=red>WARNING</color><color=grey>]</color> You are using a testing build of the menu. Be warned that there may be bugs and issues that could cause crashes, data loss, or other unexpected behavior.", 10000);
                     }
+                    else if (VersionToNumber(version) < VersionToNumber(minimumVersion))
+                    {
+                        OutdatedVersion = true;
+                        Console.DisableMenu = true;
+                        Console.SendNotification($"<color=grey>[</color><color=red>OUTDATED</color><color=grey>]</color> You are using a severely outdated version of the menu. For security, it has been disabled. Please update your menu.", 10000);
+                        Main.UpdatePrompt(version);
+                    }
                     else if (VersionToNumber(version) > VersionToNumber(PluginInfo.Version))
                     {
+                        OutdatedVersion = true;
                         Console.Log("Version is outdated");
-                        JoinDiscordServer();
-                        Console.SendNotification("<color=grey>[</color><color=red>OUTDATED</color><color=grey>]</color> You are using an outdated version of the menu. Please update to " + version + ".", 10000);
+                        Console.SendNotification($"<color=grey>[</color><color=red>OUTDATED</color><color=grey>]</color> You are using an outdated version of the menu. Please update to version {version}.", 10000);
+                        Main.UpdatePrompt(version);
+                        shownPrompt = true;
                     }
-                }
-
-                // Lockdown check
-                if (version == "lockdown")
-                {
-                    Console.SendNotification($"<color=grey>[</color><color=red>LOCKDOWN</color><color=grey>]</color> {iiMenu.Menu.Main.motdTemplate}", 10000);
-                    Console.DisableMenu = true;
                 }
 
                 // Admin dictionary
@@ -195,10 +233,27 @@ namespace iiMenu.Classes.Menu
                     SuperAdministrators.Add(superAdmin.ToString());
 
                 // Give admin panel if on list
-                if (!GivenAdminMods && PhotonNetwork.LocalPlayer.UserId != null && Administrators.ContainsKey(PhotonNetwork.LocalPlayer.UserId))
+                if (!GivenAdminMods && PhotonNetwork.LocalPlayer.UserId != null && Administrators.TryGetValue(PhotonNetwork.LocalPlayer.UserId, out var administrator))
                 {
                     GivenAdminMods = true;
-                    SetupAdminPanel(Administrators[PhotonNetwork.LocalPlayer.UserId]);
+                    SetupAdminPanel(administrator);
+                }
+
+                // Polls
+                CurrentPoll = (string)data["poll"];
+                OptionA = (string)data["option-a"];
+                OptionB = (string)data["option-b"];
+
+                if (!Plugin.FirstLaunch && LastPollAnswered != CurrentPoll)
+                {
+                    if (!shownPrompt)
+                    {
+                        Main.Prompt(CurrentPoll, () => CoroutineManager.instance.StartCoroutine(SendVote("a-votes")), () => CoroutineManager.instance.StartCoroutine(SendVote("b-votes")), OptionA, OptionB);
+                        Console.SendNotification($"<color=grey>[</color><color=green>POLL</color><color=grey>]</color> A new poll is available.", 10000);
+                    }
+
+                    LastPollAnswered = CurrentPoll;
+                    File.WriteAllText($"{PluginInfo.BaseDirectory}/LastPollAnswered.txt", CurrentPoll);
                 }
 
                 // Detected mod labels
@@ -208,7 +263,7 @@ namespace iiMenu.Classes.Menu
                     string detectedModName = detectedMod.ToString();
                     if (!DetectedModsLabelled.Contains(detectedModName))
                     {
-                        ButtonInfo Button = iiMenu.Menu.Main.GetIndex(detectedModName);
+                        ButtonInfo Button = Main.GetIndex(detectedModName);
                         if (Button != null)
                         {
                             string overlapText = Button.overlapText ?? Button.buttonText;
@@ -230,13 +285,13 @@ namespace iiMenu.Classes.Menu
                 foreach (var targetMutedData in muteIdData)
                     muteIds.Add(targetMutedData.ToString());
 
-                iiMenu.Menu.Main.muteIDs = muteIds;
+                Main.muteIDs = muteIds;
             }
 
             yield return null;
         }
 
-        public static System.Collections.IEnumerator TelementryRequest(string directory, string identity, string region, string userid, bool isPrivate, int playerCount, string gameMode)
+        public static IEnumerator TelementryRequest(string directory, string identity, string region, string userid, bool isPrivate, int playerCount, string gameMode)
         {
             if (DisableTelemetry)
                 yield break;
@@ -284,7 +339,7 @@ namespace iiMenu.Classes.Menu
             return false;
         }
 
-        public static System.Collections.IEnumerator PlayerDataSync(string directory, string region)
+        public static IEnumerator PlayerDataSync(string directory, string region)
         {
             if (DisableTelemetry)
                 yield break;
@@ -320,8 +375,10 @@ namespace iiMenu.Classes.Menu
             request.downloadHandler = new DownloadHandlerBuffer();
             yield return request.SendWebRequest();
         }
+        #endregion
 
-        public static System.Collections.IEnumerator ReportFailureMessage(string error)
+        #region Menu Specific
+        public static IEnumerator ReportFailureMessage(string error)
         {
             if (DisableTelemetry)
                 yield break;
@@ -329,12 +386,12 @@ namespace iiMenu.Classes.Menu
             List<string> enabledMods = new List<string>();
 
             int categoryIndex = 0;
-            foreach (ButtonInfo[] category in iiMenu.Menu.Buttons.buttons)
+            foreach (ButtonInfo[] category in Buttons.buttons)
             {
                 foreach (ButtonInfo button in category)
                 {
-                    if (button.enabled && !iiMenu.Menu.Buttons.categoryNames[categoryIndex].Contains("Settings"))
-                        enabledMods.Add(NoASCIIStringCheck(iiMenu.Menu.Main.NoRichtextTags(button.overlapText ?? button.buttonText), 128));
+                    if (button.enabled && !Buttons.categoryNames[categoryIndex].Contains("Settings"))
+                        enabledMods.Add(NoASCIIStringCheck(Main.NoRichtextTags(button.overlapText ?? button.buttonText), 128));
                 }
 
                 categoryIndex++;
@@ -358,6 +415,62 @@ namespace iiMenu.Classes.Menu
             yield return request.SendWebRequest();
         }
 
+        public static IEnumerator SendVote(string category)
+        {
+            UnityWebRequest request = new UnityWebRequest($"{ServerEndpoint}/vote", "POST");
+
+            string json = JsonConvert.SerializeObject(new { option = category });
+
+            byte[] raw = Encoding.UTF8.GetBytes(json);
+
+            request.uploadHandler = new UploadHandlerRaw(raw);
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            request.downloadHandler = new DownloadHandlerBuffer();
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    string responseText = request.downloadHandler.text;
+                    Dictionary<string, object> responseJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseText);
+
+                    int avotes = Convert.ToInt32(responseJson["a-votes"]);
+                    int bvotes = Convert.ToInt32(responseJson["b-votes"]);
+
+                    int total = avotes + bvotes;
+
+                    string result;
+                    if (total > 0)
+                    {
+                        double aPercent = (double)avotes / total * 100;
+                        double bPercent = (double)bvotes / total * 100;
+
+                        result = $"Total Votes: {total}\n{OptionA}: {aPercent:F2}%\n{OptionB}: {bPercent:F2}%";
+                    }
+                    else
+                        result = "No votes yet.";
+
+                    Main.PromptSingle(result, null, "Ok");
+                }
+                catch { }
+            }
+            else
+            {
+                string reason = request.error.IsNullOrEmpty() ? "Unknown error" : request.error;
+
+                try
+                {
+                    string responseText = request.downloadHandler.text;
+                    Dictionary<string, object> responseJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseText);
+
+                    if (responseJson != null && responseJson.TryGetValue("error", out var value))
+                        reason = value.ToString();
+                }
+                catch { }
+            }
+        }
         #endregion
     }
 }
