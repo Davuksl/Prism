@@ -7,7 +7,7 @@ namespace iiMenu
         public const string Name = "Prism";
         public const string Description = "nothing";
         public const string Version = "1.0";
-        public const string BuildTimestamp = "2025-10-05T08:49:30Z";
+        public const string BuildTimestamp = "2025-10-07T05:04:10Z";
         public const string BaseDirectory = "Prism";
         public const string ResourceURL = "https://github.com/iiDk-the-actual/ModInfo/raw/main";
         public const string ClientResourcePath = "iiMenu.Resources.Client";
